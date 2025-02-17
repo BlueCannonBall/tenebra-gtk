@@ -75,14 +75,20 @@ public:
             save();
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(save_action));
-        gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.save", (const char*[]) {"<Ctrl>S", nullptr});
+        {
+            const char* accels[] = {"<Ctrl>S", nullptr};
+            gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.save", accels);
+        }
 
         GSimpleAction* refresh_action = g_simple_action_new("refresh", nullptr);
         glib::connect_signal<GVariant*>(refresh_action, "activate", [this](GSimpleAction*, GVariant*) {
             refresh();
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(refresh_action));
-        gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.refresh", (const char*[]) {"<Ctrl>R", nullptr});
+        {
+            const char* accels[] = {"<Ctrl>R", nullptr};
+            gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.refresh", accels);
+        }
 
         GtkWidget* header_bar = adw_header_bar_new();
         gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
