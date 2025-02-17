@@ -380,9 +380,10 @@ public:
             }
 
             int status;
-            wait(&status);
-            AdwToast* toast = adw_toast_new(("Tenebra exited with status code " + std::to_string(status)).c_str());
-            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            if (wait(&status) != -1) {
+                AdwToast* toast = adw_toast_new(("Tenebra exited with code " + std::to_string(WEXITSTATUS(status))).c_str());
+                adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            }
         } else {
             AdwToast* toast = adw_toast_new("Tenebra is already stopped!");
             adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
