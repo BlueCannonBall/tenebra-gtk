@@ -1,5 +1,5 @@
 # Tenebra GTK
-A GTK 4 frontend for [Tenebra](https://github.com/UE2020/tenebra) using libadwaita.
+A GTK 4 frontend for [Tenebra](https://github.com/UE2020/tenebra) built with libadwaita.
 
 ## Dependencies
 - GTK 4
