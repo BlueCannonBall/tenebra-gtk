@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Custom
+obj/
+tenebra-gtk
+.cache/
+compile_commands.json
