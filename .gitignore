@@ -36,3 +36,4 @@ obj/
 tenebra-gtk
 .cache/
 compile_commands.json
+target/
