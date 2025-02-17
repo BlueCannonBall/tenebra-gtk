@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <string>
 #include <sys/wait.h>
+#include <thread>
 #include <unistd.h>
 
 pid_t get_tenebra_pid() {
@@ -384,6 +385,8 @@ public:
             int status;
             if (wait(&status) != -1) {
                 show_toast("Tenebra exited with code " + std::to_string(WEXITSTATUS(status)));
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         } else {
             show_toast("Tenebra is already stopped!");
