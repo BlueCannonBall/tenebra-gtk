@@ -255,6 +255,12 @@ public:
         gtk_window_present(GTK_WINDOW(window));
     }
 
+    void show_toast(const std::string& title, unsigned int timeout = 5) {
+        AdwToast* toast = adw_toast_new(title.c_str());
+        adw_toast_set_timeout(toast, timeout);
+        adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+    }
+
     void handle_choose_file(GtkWidget* button, GtkWidget* entry) {
         glib::Object<GtkFileFilter> pem_filter = gtk_file_filter_new();
         gtk_file_filter_add_suffix(pem_filter.get(), "pem");
@@ -304,8 +310,7 @@ public:
                 gtk_editable_set_text(GTK_EDITABLE(cert_entry), cert.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(key_entry), key.c_str());
             } catch (const std::exception& e) {
-                AdwToast* toast = adw_toast_new(("Failed to parse existing configuration at " + std::string(config_path / "config.toml")).c_str());
-                adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+                show_toast("Failed to parse existing configuration at " + std::string(config_path / "config.toml"));
             }
         }
 
@@ -325,15 +330,13 @@ public:
 
         int pipe_fds[2];
         if (pipe(pipe_fds) == -1) {
-            AdwToast* toast = adw_toast_new("Failed to start Tenebra (pipe creation failed)");
-            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            show_toast("Failed to start Tenebra (pipe creation failed)");
             return;
         }
 
         pid_t pid;
         if ((pid = fork()) == -1) {
-            AdwToast* toast = adw_toast_new("Failed to start Tenebra (fork failed)");
-            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            show_toast("Failed to start Tenebra (fork failed)");
             close(pipe_fds[0]);
             close(pipe_fds[1]);
             return;
@@ -365,8 +368,7 @@ public:
 
         int error;
         if (read(pipe_fds[0], &error, sizeof(int)) == sizeof(int)) {
-            AdwToast* toast = adw_toast_new(("Failed to start Tenebra (error " + std::to_string(error) + ')').c_str());
-            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            show_toast("Failed to start Tenebra (error " + std::to_string(error) + ')');
         }
 
         close(pipe_fds[0]);
@@ -376,18 +378,15 @@ public:
         pid_t tenebra_pid;
         if ((tenebra_pid = get_tenebra_pid()) != -1) {
             if (kill(tenebra_pid, SIGTERM) == -1) {
-                AdwToast* toast = adw_toast_new(("Failed to stop Tenebra (error " + std::to_string(errno) + ')').c_str());
-                adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+                show_toast("Failed to stop Tenebra (error " + std::to_string(errno) + ')');
             }
 
             int status;
             if (wait(&status) != -1) {
-                AdwToast* toast = adw_toast_new(("Tenebra exited with code " + std::to_string(WEXITSTATUS(status))).c_str());
-                adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+                show_toast("Tenebra exited with code " + std::to_string(WEXITSTATUS(status)));
             }
         } else {
-            AdwToast* toast = adw_toast_new("Tenebra is already stopped!");
-            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            show_toast("Tenebra is already stopped!");
         }
     }
 
@@ -417,15 +416,13 @@ public:
                 config_file << config << std::flush;
 
                 if (show_success_toast) {
-                    AdwToast* toast = adw_toast_new(("Configuration written to " + std::string(config_path / "config.toml")).c_str());
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+                    show_toast("Configuration written to " + std::string(config_path / "config.toml"));
                 }
                 return 0;
             }
         }
 
-        AdwToast* toast = adw_toast_new(("Failed to open configuration at " + std::string(config_path / "config.toml")).c_str());
-        adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+        show_toast("Failed to open configuration at " + std::string(config_path / "config.toml"));
         return -1;
     }
 };
