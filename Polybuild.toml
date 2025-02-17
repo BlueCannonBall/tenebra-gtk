@@ -1,0 +1,9 @@
+[paths]
+output = "tenebra-gtk"
+source = ["."]
+artifact = "obj"
+install = "/usr/local/bin"
+
+[options]
+compilation-flags = "-Wall -Wno-unused-result -std=c++17 -O3"
+pkg-config-libraries = ["libadwaita-1", "gtk4"]
