@@ -44,7 +44,11 @@ class Tenebra {
 protected:
     GtkWidget* window;
     GtkWidget* toast_overlay;
-    GtkWidget* manage_button;
+
+    GtkWidget* management_stack;
+    GtkWidget* start_button;
+    GtkWidget* running_box;
+
     GtkWidget* password_entry;
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
@@ -57,8 +61,6 @@ protected:
     GtkWidget* bwe_switch;
     GtkWidget* cert_entry;
     GtkWidget* key_entry;
-
-    gulong current_management_signal_handler = 0;
 
 public:
     Tenebra() = default;
@@ -85,9 +87,37 @@ public:
         GtkWidget* header_bar = adw_header_bar_new();
         gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
 
-        manage_button = gtk_button_new_with_label("Start");
-        gtk_widget_add_css_class(manage_button, "suggested-action");
-        adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), manage_button);
+        management_stack = gtk_stack_new();
+        gtk_stack_set_hhomogeneous(GTK_STACK(management_stack), FALSE);
+        adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), management_stack);
+
+        start_button = gtk_button_new_with_label("Start");
+        gtk_widget_add_css_class(start_button, "suggested-action");
+        glib::connect_signal(start_button, "clicked", [this](GtkWidget*) {
+            start();
+            refresh_management();
+        });
+        gtk_stack_add_child(GTK_STACK(management_stack), start_button);
+
+        running_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_widget_add_css_class(running_box, "linked");
+        gtk_stack_add_child(GTK_STACK(management_stack), running_box);
+
+        GtkWidget* stop_button = gtk_button_new_with_label("Stop");
+        gtk_widget_add_css_class(stop_button, "destructive-action");
+        glib::connect_signal(stop_button, "clicked", [this](GtkWidget*) {
+            stop();
+            refresh_management();
+        });
+        gtk_box_append(GTK_BOX(running_box), stop_button);
+
+        GtkWidget* restart_button = gtk_button_new_with_label("Restart");
+        glib::connect_signal(restart_button, "clicked", [this](GtkWidget*) {
+            stop();
+            start();
+            refresh_management();
+        });
+        gtk_box_append(GTK_BOX(running_box), restart_button);
 
         GtkWidget* save_button = gtk_button_new_from_icon_name("document-save-symbolic");
         glib::connect_signal(save_button, "clicked", [this](GtkWidget*) {
@@ -277,92 +307,79 @@ public:
 
     void refresh_management() {
         if (get_tenebra_pid() == -1) {
-            gtk_button_set_label(GTK_BUTTON(manage_button), "Start");
-            gtk_widget_remove_css_class(manage_button, "destructive-action");
-            gtk_widget_add_css_class(manage_button, "suggested-action");
-
-            if (current_management_signal_handler) {
-                g_signal_handler_disconnect(manage_button, current_management_signal_handler);
-            }
-            current_management_signal_handler = glib::connect_signal(manage_button, "clicked", [this](GtkWidget*) {
-                if (save(false) == -1) return;
-
-                int pipe_fds[2];
-                if (pipe(pipe_fds) == -1) {
-                    AdwToast* toast = adw_toast_new("Failed to start Tenebra (pipe creation failed)");
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                    return;
-                }
-
-                pid_t pid;
-                if ((pid = fork()) == -1) {
-                    AdwToast* toast = adw_toast_new("Failed to start Tenebra (fork failed)");
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                    close(pipe_fds[0]);
-                    close(pipe_fds[1]);
-                    return;
-                } else if (!pid) {
-                    close(pipe_fds[0]); // Close unused read end
-                    fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
-
-                    int null_file;
-                    if ((null_file = open("/dev/null", O_RDWR)) == -1) {
-                        int error = errno;
-                        write(pipe_fds[1], &error, sizeof(int));
-                        close(pipe_fds[1]);
-                        exit(EXIT_FAILURE);
-                    }
-                    dup2(null_file, STDOUT_FILENO);
-                    dup2(null_file, STDERR_FILENO);
-                    dup2(null_file, STDIN_FILENO);
-                    close(null_file);
-
-                    if (execlp("tenebra", "tenebra", nullptr) == -1) {
-                        int error = errno;
-                        write(pipe_fds[1], &error, sizeof(int));
-                        close(pipe_fds[1]);
-                        exit(EXIT_FAILURE);
-                    }
-                }
-
-                close(pipe_fds[1]); // Close unused write end
-
-                int error;
-                if (read(pipe_fds[0], &error, sizeof(int)) == sizeof(int)) {
-                    AdwToast* toast = adw_toast_new(("Failed to start Tenebra (error " + std::to_string(error) + ')').c_str());
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                }
-
-                close(pipe_fds[0]);
-
-                refresh_management();
-            });
+            gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
         } else {
-            gtk_button_set_label(GTK_BUTTON(manage_button), "Stop");
-            gtk_widget_remove_css_class(manage_button, "suggested-action");
-            gtk_widget_add_css_class(manage_button, "destructive-action");
+            gtk_stack_set_visible_child(GTK_STACK(management_stack), running_box);
+        }
+    }
 
-            if (current_management_signal_handler) {
-                g_signal_handler_disconnect(manage_button, current_management_signal_handler);
+    void start() {
+        if (save(false) == -1) return;
+
+        int pipe_fds[2];
+        if (pipe(pipe_fds) == -1) {
+            AdwToast* toast = adw_toast_new("Failed to start Tenebra (pipe creation failed)");
+            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            return;
+        }
+
+        pid_t pid;
+        if ((pid = fork()) == -1) {
+            AdwToast* toast = adw_toast_new("Failed to start Tenebra (fork failed)");
+            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            close(pipe_fds[0]);
+            close(pipe_fds[1]);
+            return;
+        } else if (!pid) {
+            close(pipe_fds[0]); // Close unused read end
+            fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
+
+            int null_file;
+            if ((null_file = open("/dev/null", O_RDWR)) == -1) {
+                int error = errno;
+                write(pipe_fds[1], &error, sizeof(int));
+                close(pipe_fds[1]);
+                exit(EXIT_FAILURE);
             }
-            current_management_signal_handler = glib::connect_signal(manage_button, "clicked", [this](GtkWidget*) {
-                pid_t tenebra_pid;
-                if ((tenebra_pid = get_tenebra_pid()) != -1) {
-                    if (kill(tenebra_pid, SIGTERM) == -1) {
-                        AdwToast* toast = adw_toast_new(("Failed to stop Tenebra (error " + std::to_string(errno) + ')').c_str());
-                        adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                    }
+            dup2(null_file, STDOUT_FILENO);
+            dup2(null_file, STDERR_FILENO);
+            dup2(null_file, STDIN_FILENO);
+            close(null_file);
 
-                    int status;
-                    wait(&status);
-                    AdwToast* toast = adw_toast_new(("Tenebra exited with status code " + std::to_string(status)).c_str());
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                } else {
-                    AdwToast* toast = adw_toast_new("Tenebra is already stopped!");
-                    adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
-                }
-                refresh_management();
-            });
+            if (execlp("tenebra", "tenebra", nullptr) == -1) {
+                int error = errno;
+                write(pipe_fds[1], &error, sizeof(int));
+                close(pipe_fds[1]);
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        close(pipe_fds[1]); // Close unused write end
+
+        int error;
+        if (read(pipe_fds[0], &error, sizeof(int)) == sizeof(int)) {
+            AdwToast* toast = adw_toast_new(("Failed to start Tenebra (error " + std::to_string(error) + ')').c_str());
+            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+        }
+
+        close(pipe_fds[0]);
+    }
+
+    void stop() {
+        pid_t tenebra_pid;
+        if ((tenebra_pid = get_tenebra_pid()) != -1) {
+            if (kill(tenebra_pid, SIGTERM) == -1) {
+                AdwToast* toast = adw_toast_new(("Failed to stop Tenebra (error " + std::to_string(errno) + ')').c_str());
+                adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+            }
+
+            int status;
+            wait(&status);
+            AdwToast* toast = adw_toast_new(("Tenebra exited with status code " + std::to_string(status)).c_str());
+            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+        } else {
+            AdwToast* toast = adw_toast_new("Tenebra is already stopped!");
+            adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
         }
     }
 
