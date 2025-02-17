@@ -9,6 +9,7 @@
 #include <fstream>
 #include <functional>
 #include <signal.h>
+#include <string>
 #include <sys/wait.h>
 #include <unistd.h>
 
