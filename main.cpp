@@ -135,8 +135,15 @@ public:
 
         GtkWidget* restart_button = gtk_button_new_with_label("Restart");
         glib::connect_signal(restart_button, "clicked", [this](GtkWidget*) {
-            if (!stop()) start();
-            refresh_management();
+            if (!stop(false)) start();
+
+            pid_t tenebra_pid;
+            if ((tenebra_pid = get_tenebra_pid()) == -1) {
+                gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
+                show_toast("Failed to start Tenebra (new instance not found)");
+            } else {
+                show_toast("Tenebra has been restarted with PID " + std::to_string(tenebra_pid));
+            }
         });
         gtk_box_append(GTK_BOX(running_box), restart_button);
 
@@ -426,7 +433,7 @@ public:
         close(pipe_fds[0]);
     }
 
-    int stop() {
+    int stop(bool show_not_running_toast = true) {
         pid_t tenebra_pid;
         if ((tenebra_pid = get_tenebra_pid()) != -1) {
             if (kill(tenebra_pid, SIGTERM) == -1) {
@@ -436,15 +443,12 @@ public:
 
             // Wait for Tenebra to die
             for (;; std::this_thread::sleep_for(std::chrono::milliseconds(10))) {
-                int result = kill(tenebra_pid, 0);
-                int error = errno;
-                waitpid(tenebra_pid, nullptr, WNOHANG);
-                if (result == -1 && error == ESRCH) {
+                if (kill(tenebra_pid, 0) == -1 && errno == ESRCH) {
                     break;
                 }
             }
-        } else {
-            show_toast("Tenebra is already stopped!");
+        } else if (show_not_running_toast) {
+            show_toast("Tenebra wasn't running in the first place 🤔");
         }
         return 0;
     }
@@ -489,10 +493,12 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    glib::Object<AdwApplication> app = adw_application_new("org.telewindow.Tenebra", G_APPLICATION_DEFAULT_FLAGS);
+    signal(SIGCHLD, [](int sig) {
+        waitpid(-1, nullptr, WNOHANG);
+    });
 
     Tenebra tenebra;
+    glib::Object<AdwApplication> app = adw_application_new("org.telewindow.Tenebra", G_APPLICATION_DEFAULT_FLAGS);
     app.connect_signal("activate", std::bind(&Tenebra::handle_activate, &tenebra, std::placeholders::_1));
-
     return g_application_run(G_APPLICATION(app.get()), argc, argv);
 }
