@@ -293,7 +293,6 @@ public:
                 adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "save", ADW_RESPONSE_SUGGESTED);
                 adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "save");
                 adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
-                adw_alert_dialog_set_prefer_wide_layout(ADW_ALERT_DIALOG(dialog), TRUE);
                 glib::connect_signal<gchar*>(dialog, "response", [this, app](AdwDialog*, gchar* response) {
                     if (!strcmp(response, "save")) {
                         if (!save(false)) g_application_quit(G_APPLICATION(app));
