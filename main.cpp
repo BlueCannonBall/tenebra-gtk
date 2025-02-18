@@ -98,7 +98,7 @@ public:
 
         GSimpleAction* refresh_action = g_simple_action_new("refresh", nullptr);
         glib::connect_signal<GVariant*>(refresh_action, "activate", [this](GSimpleAction*, GVariant*) {
-            refresh();
+            refresh(true);
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(refresh_action));
         {
@@ -155,7 +155,7 @@ public:
 
         GtkWidget* refresh_button = gtk_button_new_from_icon_name("view-refresh-symbolic");
         glib::connect_signal(refresh_button, "clicked", [this](GtkWidget*) {
-            refresh();
+            refresh(true);
         });
         adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), refresh_button);
 
@@ -340,7 +340,25 @@ public:
             entry);
     }
 
-    void refresh() {
+    void refresh(bool show_confirmation_dialog = false) {
+        if (show_confirmation_dialog && dirty) {
+            AdwDialog* dialog = adw_alert_dialog_new("Save Changes?", "You have unsaved changes. Changes that are not saved will be permanently lost.");
+            adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", "Cancel", "discard", "Discard", "save", "Save", nullptr);
+            adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "discard", ADW_RESPONSE_DESTRUCTIVE);
+            adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "save", ADW_RESPONSE_SUGGESTED);
+            adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "save");
+            adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
+            glib::connect_signal<gchar*>(dialog, "response", [this](AdwDialog*, gchar* response) {
+                if (!strcmp(response, "save")) {
+                    if (!save()) refresh_management();
+                } else if (!strcmp(response, "discard")) {
+                    refresh();
+                }
+            });
+            adw_dialog_present(dialog, window);
+            return;
+        }
+
         auto config_path = get_config_path();
         if (!config_path.empty()) {
             try {
