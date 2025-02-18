@@ -9,6 +9,8 @@
 #include <fstream>
 #include <functional>
 #include <signal.h>
+#include <stdio.h>
+#include <string.h>
 #include <string>
 #include <sys/wait.h>
 #include <thread>
@@ -44,17 +46,21 @@ std::filesystem::path get_config_path() {
 
 class Tenebra {
 protected:
+    AdwApplication* app;
+
     GtkWidget* window;
     GtkWidget* toast_overlay;
 
     GtkWidget* management_stack;
     GtkWidget* start_button;
     GtkWidget* running_box;
+    GtkWidget* save_button;
 
     GtkWidget* password_entry;
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
     GtkWidget* startx_entry;
+    GtkWidget* vbv_buf_capacity_entry;
     GtkWidget* tcp_upnp_switch;
     GtkWidget* sound_forwarding_switch;
     GtkWidget* vaapi_switch;
@@ -63,6 +69,14 @@ protected:
     GtkWidget* bwe_switch;
     GtkWidget* cert_entry;
     GtkWidget* key_entry;
+
+    bool dirty = true;
+
+    void show_toast(const std::string& title, unsigned int timeout = 5) {
+        AdwToast* toast = adw_toast_new(title.c_str());
+        adw_toast_set_timeout(toast, timeout);
+        adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+    }
 
 public:
     Tenebra() = default;
@@ -121,13 +135,12 @@ public:
 
         GtkWidget* restart_button = gtk_button_new_with_label("Restart");
         glib::connect_signal(restart_button, "clicked", [this](GtkWidget*) {
-            stop();
-            start();
+            if (!stop()) start();
             refresh_management();
         });
         gtk_box_append(GTK_BOX(running_box), restart_button);
 
-        GtkWidget* save_button = gtk_button_new_from_icon_name("document-save-symbolic");
+        save_button = gtk_button_new_from_icon_name("document-save-symbolic");
         glib::connect_signal(save_button, "clicked", [this](GtkWidget*) {
             save();
         });
@@ -168,40 +181,54 @@ public:
 
         password_entry = adw_password_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(password_entry), "Password");
+        glib::connect_signal<GParamSpec*>(password_entry, "notify::text", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), password_entry, -1);
 
         port_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(port_entry), "Port");
         adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), 8080);
+        glib::connect_signal<GParamSpec*>(port_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), port_entry, -1);
 
         target_bitrate_entry = adw_spin_row_new_with_range(50., 12000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(target_bitrate_entry), "Target bitrate");
         adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), 4000);
+        glib::connect_signal<GParamSpec*>(target_bitrate_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), target_bitrate_entry, -1);
 
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to stream at");
+        glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), startx_entry, -1);
+
+        vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "Sets the size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
+        glib::connect_signal<GParamSpec*>(vbv_buf_capacity_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), vbv_buf_capacity_entry, -1);
 
         tcp_upnp_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "TCP UPnP");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(tcp_upnp_switch), "Automatically port forwards TCP ports for ICE-TCP");
         adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), TRUE);
+        glib::connect_signal<GParamSpec*>(tcp_upnp_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), tcp_upnp_switch, -1);
 
         sound_forwarding_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(sound_forwarding_switch), "Sound forwarding");
         adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), TRUE);
+        glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), sound_forwarding_switch, -1);
 
         vaapi_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vaapi_switch), "VA-API");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vaapi_switch), "Enables hardware accelerated video encoding on devices with Intel or AMD GPUs");
+        glib::connect_signal<GParamSpec*>(vaapi_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         glib::connect_signal<GParamSpec*>(vaapi_switch, "notify::active", [this](GtkWidget* vaapi_switch, GParamSpec*) {
             if (adw_switch_row_get_active(ADW_SWITCH_ROW(vaapi_switch))) {
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
+                gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(fullchroma_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), FALSE);
                 gtk_widget_set_sensitive(bwe_switch, FALSE);
@@ -209,6 +236,7 @@ public:
             } else {
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
+                gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
                 gtk_widget_set_sensitive(fullchroma_switch, TRUE);
                 gtk_widget_set_sensitive(bwe_switch, TRUE);
             }
@@ -219,21 +247,25 @@ public:
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vapostproc_switch), "VA-API video conversion");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vapostproc_switch), "Enables hardware accelerated video format conversion on devices with Intel or AMD GPUs");
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
+        glib::connect_signal<GParamSpec*>(vapostproc_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vapostproc_switch, -1);
 
         fullchroma_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(fullchroma_switch), "FullChroma™");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(fullchroma_switch), "Improves color fidelity at the cost of performance");
+        glib::connect_signal<GParamSpec*>(fullchroma_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), fullchroma_switch, -1);
 
         bwe_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bwe_switch), "Bandwidth estimation");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(bwe_switch), "Adjusts media bitrate on the fly to adapt to changing network conditions");
         adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), TRUE);
+        glib::connect_signal<GParamSpec*>(bwe_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), bwe_switch, -1);
 
         cert_entry = adw_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(cert_entry), "Certificate chain file");
+        glib::connect_signal<GParamSpec*>(cert_entry, "notify::text", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), cert_entry, -1);
 
         GtkWidget* choose_cert_button = gtk_button_new_from_icon_name("document-open-symbolic");
@@ -243,6 +275,7 @@ public:
 
         key_entry = adw_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(key_entry), "Private key file");
+        glib::connect_signal<GParamSpec*>(key_entry, "notify::text", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), key_entry, -1);
 
         GtkWidget* choose_key_button = gtk_button_new_from_icon_name("document-open-symbolic");
@@ -252,14 +285,35 @@ public:
 
         refresh();
 
+        glib::connect_signal(window, "close-request", [this, app](GtkWidget* window) -> gboolean {
+            if (dirty) {
+                AdwDialog* dialog = adw_alert_dialog_new("Save Changes?", "You have unsaved changes. Changes that are not saved will be permanently lost.");
+                adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", "Cancel", "discard", "Discard", "save", "Save", nullptr);
+                adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "discard", ADW_RESPONSE_DESTRUCTIVE);
+                adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "save", ADW_RESPONSE_SUGGESTED);
+                adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "save");
+                adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
+                adw_alert_dialog_set_prefer_wide_layout(ADW_ALERT_DIALOG(dialog), TRUE);
+                glib::connect_signal<gchar*>(dialog, "response", [this, app](AdwDialog*, gchar* response) {
+                    if (!strcmp(response, "save")) {
+                        if (!save(false)) g_application_quit(G_APPLICATION(app));
+                    } else if (!strcmp(response, "discard")) {
+                        g_application_quit(G_APPLICATION(app));
+                    }
+                });
+                adw_dialog_present(dialog, window);
+                return TRUE;
+            } else {
+                return FALSE;
+            }
+        });
+
         gtk_window_set_child(GTK_WINDOW(window), toast_overlay);
         gtk_window_present(GTK_WINDOW(window));
     }
 
-    void show_toast(const std::string& title, unsigned int timeout = 5) {
-        AdwToast* toast = adw_toast_new(title.c_str());
-        adw_toast_set_timeout(toast, timeout);
-        adw_toast_overlay_add_toast(ADW_TOAST_OVERLAY(toast_overlay), toast);
+    void handle_change(GtkWidget*, GParamSpec*) {
+        gtk_widget_set_sensitive(save_button, dirty = true);
     }
 
     void handle_choose_file(GtkWidget* button, GtkWidget* entry) {
@@ -289,6 +343,7 @@ public:
                 auto port = toml::find<unsigned short>(config, "port");
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
                 auto startx = toml::find<unsigned short>(config, "startx");
+                auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
                 auto tcp_upnp = toml::find<bool>(config, "tcp_upnp");
                 auto sound_forwarding = toml::find<bool>(config, "sound_forwarding");
                 auto vaapi = toml::find<bool>(config, "vaapi");
@@ -302,6 +357,7 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
+                adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), tcp_upnp);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), sound_forwarding);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vaapi_switch), vaapi);
@@ -310,6 +366,8 @@ public:
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), !no_bwe);
                 gtk_editable_set_text(GTK_EDITABLE(cert_entry), cert.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(key_entry), key.c_str());
+
+                gtk_widget_set_sensitive(save_button, dirty = false);
             } catch (const std::exception& e) {
                 show_toast("Failed to parse existing configuration at " + std::string(config_path / "config.toml"));
             }
@@ -345,17 +403,11 @@ public:
             close(pipe_fds[0]); // Close unused read end
             fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
 
-            int null_file;
-            if ((null_file = open("/dev/null", O_RDWR)) == -1) {
-                int error = errno;
-                write(pipe_fds[1], &error, sizeof(int));
-                close(pipe_fds[1]);
-                exit(EXIT_FAILURE);
-            }
-            dup2(null_file, STDOUT_FILENO);
-            dup2(null_file, STDERR_FILENO);
-            dup2(null_file, STDIN_FILENO);
-            close(null_file);
+            setsid();
+
+            freopen("/dev/null", "r", stdin);
+            freopen("/dev/null", "w", stdout);
+            freopen("/dev/null", "w", stderr);
 
             if (execlp("tenebra", "tenebra", nullptr) == -1) {
                 int error = errno;
@@ -375,22 +427,27 @@ public:
         close(pipe_fds[0]);
     }
 
-    void stop() {
+    int stop() {
         pid_t tenebra_pid;
         if ((tenebra_pid = get_tenebra_pid()) != -1) {
             if (kill(tenebra_pid, SIGTERM) == -1) {
                 show_toast("Failed to stop Tenebra (error " + std::to_string(errno) + ')');
+                return -1;
             }
 
-            int status;
-            if (wait(&status) != -1) {
-                show_toast("Tenebra exited with code " + std::to_string(WEXITSTATUS(status)));
-            } else {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            // Wait for Tenebra to die
+            for (;; std::this_thread::sleep_for(std::chrono::milliseconds(10))) {
+                int result = kill(tenebra_pid, 0);
+                int error = errno;
+                waitpid(tenebra_pid, nullptr, WNOHANG);
+                if (result == -1 && error == ESRCH) {
+                    break;
+                }
             }
         } else {
             show_toast("Tenebra is already stopped!");
         }
+        return 0;
     }
 
     int save(bool show_success_toast = true) {
@@ -407,6 +464,7 @@ public:
                     {"port", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))},
                     {"target_bitrate", (unsigned int) adw_spin_row_get_value(ADW_SPIN_ROW(target_bitrate_entry))},
                     {"startx", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(startx_entry))},
+                    {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
                     {"tcp_upnp", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(tcp_upnp_switch))},
                     {"sound_forwarding", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(sound_forwarding_switch))},
                     {"vaapi", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(vaapi_switch))},
@@ -416,16 +474,17 @@ public:
                     {"cert", gtk_editable_get_text(GTK_EDITABLE(cert_entry))},
                     {"key", gtk_editable_get_text(GTK_EDITABLE(key_entry))},
                 });
-                config_file << config << std::flush;
-
-                if (show_success_toast) {
-                    show_toast("Configuration written to " + std::string(config_path / "config.toml"));
+                if (config_file << config << std::flush) {
+                    gtk_widget_set_sensitive(save_button, dirty = false);
+                    if (show_success_toast) {
+                        show_toast("Configuration written to " + std::string(config_path / "config.toml"));
+                    }
+                    return 0;
                 }
-                return 0;
             }
         }
 
-        show_toast("Failed to open configuration at " + std::string(config_path / "config.toml"));
+        show_toast("Failed to write configuration to " + std::string(config_path / "config.toml"));
         return -1;
     }
 };
