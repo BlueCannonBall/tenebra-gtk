@@ -17,10 +17,11 @@
 #include <unistd.h>
 
 pid_t get_tenebra_pid() {
+    std::string self = std::to_string(getpid());
     for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
         if (entry.is_directory()) {
             std::string filename = entry.path().filename();
-            if (std::all_of(filename.begin(), filename.end(), isdigit)) {
+            if (std::all_of(filename.begin(), filename.end(), isdigit) && filename != self) {
                 std::ifstream comm_file(entry.path() / "comm");
                 if (comm_file.is_open()) {
                     std::string comm;
