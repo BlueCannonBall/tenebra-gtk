@@ -466,7 +466,7 @@ public:
                 }
             }
         } else if (show_not_running_toast) {
-            show_toast("Tenebra wasn't running in the first place 🤔");
+            show_toast("Tenebra wasn't running in the first place 🫤");
         }
         return 0;
     }
