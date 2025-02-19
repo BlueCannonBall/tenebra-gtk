@@ -84,7 +84,7 @@ public:
     void handle_activate(AdwApplication* app) {
         window = gtk_application_window_new(GTK_APPLICATION(app));
         gtk_window_set_title(GTK_WINDOW(window), "Tenebra");
-        gtk_window_set_default_size(GTK_WINDOW(window), 675, 575);
+        gtk_window_set_default_size(GTK_WINDOW(window), 675, 600);
 
         GSimpleAction* save_action = g_simple_action_new("save", nullptr);
         glib::connect_signal<GVariant*>(save_action, "activate", [this](GSimpleAction*, GVariant*) {
