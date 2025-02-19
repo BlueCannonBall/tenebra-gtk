@@ -142,7 +142,7 @@ public:
                 gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
                 show_toast("Failed to start Tenebra (new instance not found)");
             } else {
-                show_toast("Tenebra has been restarted with PID " + std::to_string(tenebra_pid));
+                show_toast("Tenebra has been restarted");
             }
         });
         gtk_box_append(GTK_BOX(running_box), restart_button);
