@@ -15,31 +15,14 @@
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
-#ifdef __APPLE__
+#ifndef __linux__
     #include <sys/sysctl.h>
     #include <sys/types.h>
     #include <vector>
 #endif
 
 pid_t get_tenebra_pid() {
-#ifdef __APPLE__
-    size_t size;
-    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, (int) getuid()};
-    if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1) {
-        return -1;
-    }
-
-    std::vector<struct kinfo_proc> processes(size / sizeof(struct kinfo_proc));
-    if (sysctl(mib, 4, processes.data(), &size, nullptr, 0) == -1) {
-        return -1;
-    }
-
-    for (const auto& process : processes) {
-        if (process.kp_proc.p_pid != getpid() && !strcmp(process.kp_proc.p_comm, "tenebra")) {
-            return process.kp_proc.p_pid;
-        }
-    }
-#else
+#ifdef __linux__
     for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
         if (entry.is_directory()) {
             std::filesystem::path path = entry.path();
@@ -67,6 +50,23 @@ pid_t get_tenebra_pid() {
                     }
                 }
             }
+        }
+    }
+#else
+    size_t size;
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, (int) getuid()};
+    if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1) {
+        return -1;
+    }
+
+    std::vector<struct kinfo_proc> processes(size / sizeof(struct kinfo_proc));
+    if (sysctl(mib, 4, processes.data(), &size, nullptr, 0) == -1) {
+        return -1;
+    }
+
+    for (const auto& process : processes) {
+        if (process.kp_proc.p_pid != getpid() && !strcmp(process.kp_proc.p_comm, "tenebra")) {
+            return process.kp_proc.p_pid;
         }
     }
 #endif
