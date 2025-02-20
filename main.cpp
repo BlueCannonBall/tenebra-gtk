@@ -108,7 +108,7 @@ protected:
     GtkWidget* vbv_buf_capacity_entry;
     GtkWidget* tcp_upnp_switch;
     GtkWidget* sound_forwarding_switch;
-    GtkWidget* vaapi_switch;
+    GtkWidget* hwencode_switch;
     GtkWidget* vapostproc_switch;
     GtkWidget* fullchroma_switch;
     GtkWidget* bwe_switch;
@@ -270,12 +270,16 @@ public:
         glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), sound_forwarding_switch, -1);
 
-        vaapi_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vaapi_switch), "VA-API");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(vaapi_switch), "Enables hardware accelerated video encoding on devices with Intel or AMD GPUs");
-        glib::connect_signal<GParamSpec*>(vaapi_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        glib::connect_signal<GParamSpec*>(vaapi_switch, "notify::active", [this](GtkWidget* vaapi_switch, GParamSpec*) {
-            if (adw_switch_row_get_active(ADW_SWITCH_ROW(vaapi_switch))) {
+        hwencode_switch = adw_switch_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hwencode_switch), "Hardware-accelerated video encoding");
+#ifdef __APPLE__
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses Apple VideoToolbox for video encoding");
+#else
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses VA-API on devices with Intel or AMD GPUs");
+#endif
+        glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", [this](GtkWidget* hwencode_switch, GParamSpec*) {
+            if (adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))) {
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(fullchroma_switch, FALSE);
@@ -287,7 +291,7 @@ public:
                 gtk_widget_set_sensitive(fullchroma_switch, TRUE);
             }
         });
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), vaapi_switch, -1);
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), hwencode_switch, -1);
 
         vapostproc_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vapostproc_switch), "VA-API video conversion");
@@ -331,7 +335,6 @@ public:
 
 #ifdef __APPLE__
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
-        gtk_widget_set_sensitive(vaapi_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #endif
 
@@ -419,7 +422,7 @@ public:
                 auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
                 auto tcp_upnp = toml::find<bool>(config, "tcp_upnp");
                 auto sound_forwarding = toml::find<bool>(config, "sound_forwarding");
-                auto vaapi = toml::find<bool>(config, "vaapi");
+                auto hwencode = toml::find_or<bool>(config, "hwencode", toml::find_or<bool>(config, "vaapi", false));
                 auto vapostproc = toml::find<bool>(config, "vapostproc");
                 auto full_chroma = toml::find<bool>(config, "full_chroma");
                 auto no_bwe = toml::find<bool>(config, "no_bwe");
@@ -433,7 +436,7 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), tcp_upnp);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), sound_forwarding);
-                adw_switch_row_set_active(ADW_SWITCH_ROW(vaapi_switch), vaapi);
+                adw_switch_row_set_active(ADW_SWITCH_ROW(hwencode_switch), hwencode);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), vapostproc);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), full_chroma);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), !no_bwe);
@@ -535,7 +538,7 @@ public:
                     {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
                     {"tcp_upnp", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(tcp_upnp_switch))},
                     {"sound_forwarding", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(sound_forwarding_switch))},
-                    {"vaapi", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(vaapi_switch))},
+                    {"hwencode", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))},
                     {"vapostproc", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(vapostproc_switch))},
                     {"full_chroma", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(fullchroma_switch))},
                     {"no_bwe", !adw_switch_row_get_active(ADW_SWITCH_ROW(bwe_switch))},
