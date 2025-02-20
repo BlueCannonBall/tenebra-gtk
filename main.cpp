@@ -96,7 +96,7 @@ protected:
     GtkWidget* window;
     GtkWidget* toast_overlay;
 
-    GtkWidget* management_stack;
+    GtkWidget* button_stack;
     GtkWidget* start_button;
     GtkWidget* running_box;
     GtkWidget* save_button;
@@ -154,28 +154,28 @@ public:
         GtkWidget* header_bar = adw_header_bar_new();
         gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
 
-        management_stack = gtk_stack_new();
-        gtk_stack_set_hhomogeneous(GTK_STACK(management_stack), FALSE);
-        adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), management_stack);
+        button_stack = gtk_stack_new();
+        gtk_stack_set_hhomogeneous(GTK_STACK(button_stack), FALSE);
+        adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), button_stack);
 
         start_button = gtk_button_new_with_label("Start");
         gtk_widget_add_css_class(start_button, "suggested-action");
         glib::connect_signal(start_button, "clicked", [this](GtkWidget*) {
             if (!start()) {
-                gtk_stack_set_visible_child(GTK_STACK(management_stack), running_box);
+                gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
             }
         });
-        gtk_stack_add_child(GTK_STACK(management_stack), start_button);
+        gtk_stack_add_child(GTK_STACK(button_stack), start_button);
 
         running_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_widget_add_css_class(running_box, "linked");
-        gtk_stack_add_child(GTK_STACK(management_stack), running_box);
+        gtk_stack_add_child(GTK_STACK(button_stack), running_box);
 
         GtkWidget* stop_button = gtk_button_new_with_label("Stop");
         gtk_widget_add_css_class(stop_button, "destructive-action");
         glib::connect_signal(stop_button, "clicked", [this](GtkWidget*) {
             if (!stop()) {
-                gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
+                gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
             }
         });
         gtk_box_append(GTK_BOX(running_box), stop_button);
@@ -393,7 +393,13 @@ public:
             adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
             glib::connect_signal<gchar*>(dialog, "response", [this](AdwDialog*, gchar* response) {
                 if (!strcmp(response, "save")) {
-                    if (!save()) refresh_management();
+                    save();
+
+                    if (get_tenebra_pid() == -1) {
+                        gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
+                    } else {
+                        gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
+                    }
                 } else if (!strcmp(response, "discard")) {
                     refresh();
                 }
@@ -440,14 +446,10 @@ public:
             }
         }
 
-        refresh_management();
-    }
-
-    void refresh_management() {
         if (get_tenebra_pid() == -1) {
-            gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
+            gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
         } else {
-            gtk_stack_set_visible_child(GTK_STACK(management_stack), running_box);
+            gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
         }
     }
 
