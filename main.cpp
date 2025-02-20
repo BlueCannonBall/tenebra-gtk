@@ -161,8 +161,9 @@ public:
         start_button = gtk_button_new_with_label("Start");
         gtk_widget_add_css_class(start_button, "suggested-action");
         glib::connect_signal(start_button, "clicked", [this](GtkWidget*) {
-            start();
-            refresh_management();
+            if (!start()) {
+                gtk_stack_set_visible_child(GTK_STACK(management_stack), running_box);
+            }
         });
         gtk_stack_add_child(GTK_STACK(management_stack), start_button);
 
@@ -173,20 +174,15 @@ public:
         GtkWidget* stop_button = gtk_button_new_with_label("Stop");
         gtk_widget_add_css_class(stop_button, "destructive-action");
         glib::connect_signal(stop_button, "clicked", [this](GtkWidget*) {
-            stop();
-            refresh_management();
+            if (!stop()) {
+                gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
+            }
         });
         gtk_box_append(GTK_BOX(running_box), stop_button);
 
         GtkWidget* restart_button = gtk_button_new_with_label("Restart");
         glib::connect_signal(restart_button, "clicked", [this](GtkWidget*) {
-            if (!stop(false)) start();
-
-            pid_t tenebra_pid;
-            if ((tenebra_pid = get_tenebra_pid()) == -1) {
-                gtk_stack_set_visible_child(GTK_STACK(management_stack), start_button);
-                show_toast("Failed to start Tenebra (new instance not found)");
-            } else {
+            if (!stop(false) && !start()) {
                 show_toast("Tenebra has been restarted");
             }
         });
@@ -455,13 +451,13 @@ public:
         }
     }
 
-    void start() {
-        if (save(false) == -1) return;
+    int start() {
+        if (save(false) == -1) return -1;
 
         int pipe_fds[2];
         if (pipe(pipe_fds) == -1) {
             show_toast("Failed to start Tenebra (pipe creation failed)");
-            return;
+            return -1;
         }
 
         pid_t pid;
@@ -469,7 +465,7 @@ public:
             show_toast("Failed to start Tenebra (fork failed)");
             close(pipe_fds[0]);
             close(pipe_fds[1]);
-            return;
+            return -1;
         } else if (!pid) {
             close(pipe_fds[0]); // Close unused read end
             fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
@@ -492,9 +488,12 @@ public:
         int error;
         if (read(pipe_fds[0], &error, sizeof(int)) == sizeof(int)) {
             show_toast("Failed to start Tenebra (error " + std::to_string(error) + ')');
+            close(pipe_fds[0]);
+            return -1;
         }
 
         close(pipe_fds[0]);
+        return 0;
     }
 
     int stop(bool show_not_running_toast = true) {
