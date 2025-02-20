@@ -34,10 +34,9 @@ pid_t get_tenebra_pid() {
         return -1;
     }
 
-    size_t count = size / sizeof(struct kinfo_proc);
-    for (size_t i = 0; i < count; ++i) {
-        if (processes[i].kp_proc.p_pid != getpid() && !strcmp(processes[i].kp_proc.p_comm, "tenebra")) {
-            return processes[i].kp_proc.p_pid;
+    for (const auto& process : processes) {
+        if (process.kp_proc.p_pid != getpid() && !strcmp(process.kp_proc.p_comm, "tenebra")) {
+            return process.kp_proc.p_pid;
         }
     }
 #else
