@@ -5,7 +5,7 @@ members = ["dist:."]
 name = "tenebra-gtk"
 # (Optional) Descriptive text about your package; some installers will present this to users
 description = "A GTK 4 frontend for Tenebra built with libadwaita."
-version = "0.2.5"
+version = "0.2.6"
 license = "GPL-3.0-only"
 repository = "https://github.com/BlueCannonBall/tenebra-gtk"
 binaries = ["tenebra-gtk"]
@@ -20,7 +20,7 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
+targets = ["x86_64-unknown-linux-gnu"]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program
@@ -29,11 +29,6 @@ install-updater = false
 [dist.dependencies.apt]
 libgtk-4-dev = "*"
 libadwaita-1-dev = "*"
-
-[dist.dependencies.homebrew]
-gtk4 = "*"
-libadwaita = "*"
-adwaita-icon-theme = "*"
 
 [dist.github-custom-runners]
 x86_64-unknown-linux-gnu = "ubuntu-latest"
