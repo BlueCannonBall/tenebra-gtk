@@ -137,7 +137,7 @@ public:
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(save_action));
         {
-            const char* accels[] = {"<Ctrl>S", nullptr};
+            const char* accels[] = {"<Primary>S", nullptr};
             gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.save", accels);
         }
 
@@ -147,7 +147,7 @@ public:
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(refresh_action));
         {
-            const char* accels[] = {"<Ctrl>R", nullptr};
+            const char* accels[] = {"<Primary>R", nullptr};
             gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.refresh", accels);
         }
 
@@ -283,14 +283,11 @@ public:
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(fullchroma_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), FALSE);
-                gtk_widget_set_sensitive(bwe_switch, FALSE);
-                adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), FALSE);
             } else {
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
                 gtk_widget_set_sensitive(fullchroma_switch, TRUE);
-                gtk_widget_set_sensitive(bwe_switch, TRUE);
             }
         });
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vaapi_switch, -1);
