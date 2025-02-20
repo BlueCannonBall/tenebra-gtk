@@ -15,33 +15,78 @@
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
+#ifdef __APPLE__
+    #include <sys/sysctl.h>
+    #include <sys/types.h>
+    #include <vector>
+#endif
 
 pid_t get_tenebra_pid() {
-    std::string self = std::to_string(getpid());
+#ifdef __APPLE__
+    size_t size;
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, getuid()};
+    if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1) {
+        return -1;
+    }
+
+    std::vector<struct kinfo_proc> processes(size / sizeof(struct kinfo_proc));
+    if (sysctl(mib, 4, processes.data(), &size, nullptr, 0) == -1) {
+        return -1;
+    }
+
+    size_t count = size / sizeof(struct kinfo_proc);
+    for (size_t i = 0; i < count; ++i) {
+        if (processes[i].kp_proc.p_pid != getpid() && !strcmp(processes[i].kp_proc.p_comm, "tenebra")) {
+            return processes[i].kp_proc.p_pid;
+        }
+    }
+#else
     for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
         if (entry.is_directory()) {
-            std::string filename = entry.path().filename();
-            if (std::all_of(filename.begin(), filename.end(), isdigit) && filename != self) {
-                std::ifstream comm_file(entry.path() / "comm");
+            std::filesystem::path path = entry.path();
+            std::string filename = path.filename();
+            if (std::all_of(filename.begin(), filename.end(), isdigit)) {
+                pid_t pid;
+                if ((pid = std::stoi(filename)) == getpid()) {
+                    continue;
+                }
+
+                std::ifstream status_file(path / "status");
+                if (status_file.is_open()) {
+                    for (std::string line; std::getline(status_file, line);) {
+                        if (line.rfind("Uid:", 0) == 0 && std::stoul(line.substr(5)) == getuid()) {
+                            continue;
+                        }
+                    }
+                }
+
+                std::ifstream comm_file(path / "comm");
                 if (comm_file.is_open()) {
                     std::string comm;
                     if (std::getline(comm_file, comm) && comm == "tenebra") {
-                        return std::stoi(filename);
+                        return pid;
                     }
                 }
             }
         }
     }
+#endif
     return -1;
 }
 
 std::filesystem::path get_config_path() {
-    std::string ret;
-    if (char* config = getenv("XDG_CONFIG_HOME")) {
-        ret = std::filesystem::path(config) / "tenebra";
+    std::filesystem::path ret;
+#ifdef __APPLE__
+    if (char* home = getenv("HOME")) {
+        ret = std::filesystem::path(home) / "Library" / "Application Support" / "tenebra";
+    }
+#else
+    if (char* xdg_config_home = getenv("XDG_CONFIG_HOME")) {
+        ret = std::filesystem::path(xdg_config_home) / "tenebra";
     } else if (char* home = getenv("HOME")) {
         ret = std::filesystem::path(home) / ".config" / "tenebra";
     }
+#endif
     return ret;
 }
 
