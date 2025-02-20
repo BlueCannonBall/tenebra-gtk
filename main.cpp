@@ -205,6 +205,7 @@ public:
         adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), refresh_button);
 
         toast_overlay = adw_toast_overlay_new();
+        gtk_window_set_child(GTK_WINDOW(window), toast_overlay);
 
         GtkWidget* scrolled_window = gtk_scrolled_window_new();
         adw_toast_overlay_set_child(ADW_TOAST_OVERLAY(toast_overlay), scrolled_window);
@@ -332,6 +333,12 @@ public:
         glib::connect_signal<GtkWidget*>(choose_key_button, "clicked", std::bind(&Tenebra::handle_choose_file, this, std::placeholders::_1, key_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
+#ifdef __APPLE__
+        gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
+        gtk_widget_set_sensitive(vaapi_switch, FALSE);
+        gtk_widget_set_sensitive(vapostproc_switch, FALSE);
+#endif
+
         refresh();
 
         glib::connect_signal(window, "close-request", [this, app](GtkWidget* window) -> gboolean {
@@ -355,8 +362,6 @@ public:
                 return FALSE;
             }
         });
-
-        gtk_window_set_child(GTK_WINDOW(window), toast_overlay);
         gtk_window_present(GTK_WINDOW(window));
     }
 
