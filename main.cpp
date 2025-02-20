@@ -24,7 +24,7 @@
 pid_t get_tenebra_pid() {
 #ifdef __APPLE__
     size_t size;
-    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, getuid()};
+    int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_UID, (int) getuid()};
     if (sysctl(mib, 4, nullptr, &size, nullptr, 0) == -1) {
         return -1;
     }
