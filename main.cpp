@@ -280,18 +280,20 @@ public:
         glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", [this](GtkWidget* hwencode_switch, GParamSpec*) {
             if (adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))) {
-#ifndef __APPLE__
+#ifdef __APPLE__
+                gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
+#else
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
 #endif
-                gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(fullchroma_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), FALSE);
             } else {
-#ifndef __APPLE__
-                gtk_widget_set_sensitive(vapostproc_switch, FALSE);
-#endif
-                adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
+#ifdef __APPLE__
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
+#else
+                gtk_widget_set_sensitive(vapostproc_switch, FALSE);
+                adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
+#endif
                 gtk_widget_set_sensitive(fullchroma_switch, TRUE);
             }
         });
