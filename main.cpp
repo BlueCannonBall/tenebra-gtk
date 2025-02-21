@@ -258,7 +258,7 @@ public:
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vbv_buf_capacity_entry, -1);
 
         tcp_upnp_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "TCP UPnP");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "Automatic ICE-TCP UPnP forwarding");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(tcp_upnp_switch), "Automatically port forwards TCP ports for ICE-TCP");
         adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), TRUE);
         glib::connect_signal<GParamSpec*>(tcp_upnp_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
