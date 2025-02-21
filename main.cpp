@@ -190,7 +190,7 @@ public:
 
         save_button = gtk_button_new_from_icon_name("document-save-symbolic");
         glib::connect_signal(save_button, "clicked", [this](GtkWidget*) {
-            save();
+            save(false);
         });
         adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), save_button);
 
