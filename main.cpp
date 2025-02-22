@@ -384,7 +384,7 @@ public:
 
         GtkFileDialog* file_dialog = gtk_file_dialog_new();
         gtk_file_dialog_set_filters(file_dialog, G_LIST_MODEL(filters.get()));
-        gtk_file_dialog_open(file_dialog, GTK_WINDOW(window), nullptr, (GAsyncReadyCallback) + [](GtkFileDialog* file_dialog, GAsyncResult* result, gpointer data) {
+        gtk_file_dialog_open(file_dialog, GTK_WINDOW(window), nullptr, (GAsyncReadyCallback) + [](GtkFileDialog* file_dialog, GAsyncResult* result, void* data) {
             if (glib::Object<GFile> file = gtk_file_dialog_open_finish(file_dialog, result, nullptr)) {
                 gtk_editable_set_text(GTK_EDITABLE(data), g_file_get_path(file.get()));
             }
