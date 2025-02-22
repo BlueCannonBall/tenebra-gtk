@@ -451,7 +451,7 @@ public:
 
                 gtk_widget_set_sensitive(save_button, dirty = false);
             } catch (const std::exception& e) {
-                show_toast("Failed to parse existing configuration at " + std::string(config_path / "config.toml"));
+                show_toast("Failed to parse existing settings at " + std::string(config_path / "config.toml"));
             }
         }
 
@@ -554,14 +554,14 @@ public:
                 if (config_file << config << std::flush) {
                     gtk_widget_set_sensitive(save_button, dirty = false);
                     if (show_success_toast) {
-                        show_toast("Configuration written to " + std::string(config_path / "config.toml"));
+                        show_toast("Settings saved to " + std::string(config_path / "config.toml"));
                     }
                     return 0;
                 }
             }
         }
 
-        show_toast("Failed to write configuration to " + std::string(config_path / "config.toml"));
+        show_toast("Failed to save settings to " + std::string(config_path / "config.toml"));
         return -1;
     }
 };
