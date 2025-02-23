@@ -282,6 +282,7 @@ public:
             if (adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))) {
 #ifdef __APPLE__
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
+                gtk_widget_set_sensitive(bwe_switch, FALSE);
 #else
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
 #endif
@@ -290,6 +291,7 @@ public:
             } else {
 #ifdef __APPLE__
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
+                gtk_widget_set_sensitive(bwe_switch, TRUE);
 #else
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
