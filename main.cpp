@@ -347,7 +347,7 @@ public:
 #endif
 
         refresh();
-        g_timeout_add(1000, [](void* data) -> gboolean {
+        g_timeout_add(2000, [](void* data) -> gboolean {
             auto tenebra = (Tenebra*) data;
             if (get_tenebra_pid() == -1) {
                 gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
