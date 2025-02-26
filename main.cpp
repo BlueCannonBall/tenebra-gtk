@@ -347,6 +347,16 @@ public:
 #endif
 
         refresh();
+        g_timeout_add(1000, [](void* data) -> gboolean {
+            auto tenebra = (Tenebra*) data;
+            if (get_tenebra_pid() == -1) {
+                gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
+            } else {
+                gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->running_box);
+            }
+            return TRUE;
+        },
+            this);
 
         glib::connect_signal(window, "close-request", [this, app](GtkWidget* window) -> gboolean {
             if (dirty) {
@@ -364,11 +374,10 @@ public:
                     }
                 });
                 adw_dialog_present(dialog, window);
-                return TRUE;
-            } else {
-                return FALSE;
             }
+            return dirty;
         });
+
         gtk_window_present(GTK_WINDOW(window));
     }
 
