@@ -342,6 +342,7 @@ public:
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
 #ifdef __APPLE__
+        gtk_widget_set_sensitive(startx_entry, FALSE);
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #endif
