@@ -483,8 +483,7 @@ public:
             return -1;
         }
 
-        pid_t pid;
-        if ((pid = fork()) == -1) {
+        if (pid_t pid = fork(); pid == -1) {
             show_toast("Failed to start Tenebra (fork failed)");
             close(pipe_fds[0]);
             close(pipe_fds[1]);
@@ -520,16 +519,15 @@ public:
     }
 
     int stop(bool show_not_running_toast = true) {
-        pid_t tenebra_pid;
-        if ((tenebra_pid = get_tenebra_pid()) != -1) {
-            if (kill(tenebra_pid, SIGTERM) == -1) {
+        if (pid_t pid = get_tenebra_pid(); pid != -1) {
+            if (kill(pid, SIGTERM) == -1) {
                 show_toast("Failed to stop Tenebra (error " + std::to_string(errno) + ')');
                 return -1;
             }
 
             // Wait for Tenebra to die
             for (;; std::this_thread::sleep_for(std::chrono::milliseconds(10))) {
-                if (kill(tenebra_pid, 0) == -1 && errno == ESRCH) {
+                if (kill(pid, 0) == -1 && errno == ESRCH) {
                     break;
                 }
             }
