@@ -432,6 +432,11 @@ public:
 
         auto config_path = get_config_path();
         if (!config_path.empty()) {
+            if (!std::filesystem::exists(config_path)) {
+                std::filesystem::create_directory(config_path);
+                return;
+            }
+
             try {
                 auto config = toml::parse(config_path / "config.toml");
                 auto password = toml::find<std::string>(config, "password");
