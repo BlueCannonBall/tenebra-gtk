@@ -35,11 +35,14 @@ pid_t get_tenebra_pid() {
 
                 std::ifstream status_file(path / "status");
                 if (status_file.is_open()) {
+                    bool uid_matches = false;
                     for (std::string line; std::getline(status_file, line);) {
-                        if (line.rfind("Uid:", 0) == 0 && std::stoul(line.substr(5)) == getuid()) {
-                            continue;
+                        if (!line.rfind("Uid:", 0)) {
+                            uid_matches = std::stoul(line.substr(5)) == getuid();
+                            break;
                         }
                     }
+                    if (!uid_matches) continue;
                 }
 
                 std::ifstream comm_file(path / "comm");
