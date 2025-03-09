@@ -140,7 +140,11 @@ public:
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(save_action));
         {
-            const char* accels[] = {"<Primary>S", nullptr};
+#ifdef __APPLE__
+            const char* accels[] = {"<Meta>S", nullptr};
+#else
+            const char* accels[] = {"<Control>S", nullptr};
+#endif
             gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.save", accels);
         }
 
@@ -150,7 +154,11 @@ public:
         });
         g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(refresh_action));
         {
-            const char* accels[] = {"<Primary>R", nullptr};
+#ifdef __APPLE__
+            const char* accels[] = {"<Meta>R", nullptr};
+#else
+            const char* accels[] = {"<Control>R", nullptr};
+#endif
             gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.refresh", accels);
         }
 
