@@ -352,7 +352,9 @@ public:
         gtk_list_box_insert(GTK_LIST_BOX(list_box), cert_entry, -1);
 
         GtkWidget* choose_cert_button = gtk_button_new_from_icon_name("document-open-symbolic");
+        gtk_widget_set_tooltip_text(choose_cert_button, "Choose File");
         gtk_widget_set_valign(choose_cert_button, GTK_ALIGN_CENTER);
+        gtk_widget_add_css_class(choose_cert_button, "flat");
         glib::connect_signal<GtkWidget*>(choose_cert_button, "clicked", std::bind(&Tenebra::handle_choose_file, this, std::placeholders::_1, cert_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(cert_entry), choose_cert_button);
 
@@ -362,7 +364,9 @@ public:
         gtk_list_box_insert(GTK_LIST_BOX(list_box), key_entry, -1);
 
         GtkWidget* choose_key_button = gtk_button_new_from_icon_name("document-open-symbolic");
+        gtk_widget_set_tooltip_text(choose_key_button, "Choose File");
         gtk_widget_set_valign(choose_key_button, GTK_ALIGN_CENTER);
+        gtk_widget_add_css_class(choose_key_button, "flat");
         glib::connect_signal<GtkWidget*>(choose_key_button, "clicked", std::bind(&Tenebra::handle_choose_file, this, std::placeholders::_1, key_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
