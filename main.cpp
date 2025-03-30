@@ -109,7 +109,7 @@ protected:
     GtkWidget* target_bitrate_entry;
     GtkWidget* startx_entry;
     GtkWidget* endy_entry;
-    GtkWidget* endy_switch;
+    GtkWidget* endy_check_button;
     GtkWidget* vbv_buf_capacity_entry;
     GtkWidget* tcp_upnp_switch;
     GtkWidget* sound_forwarding_switch;
@@ -270,10 +270,10 @@ public:
         glib::connect_signal<GParamSpec*>(endy_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), endy_entry, -1);
 
-        endy_switch = gtk_check_button_new();
-        gtk_widget_set_valign(endy_switch, GTK_ALIGN_CENTER);
-        glib::connect_signal<GParamSpec*>(endy_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        adw_action_row_add_prefix(ADW_ACTION_ROW(endy_entry), endy_switch);
+        endy_check_button = gtk_check_button_new();
+        gtk_widget_set_valign(endy_check_button, GTK_ALIGN_CENTER);
+        glib::connect_signal<GParamSpec*>(endy_check_button, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        adw_action_row_add_prefix(ADW_ACTION_ROW(endy_entry), endy_check_button);
 
         vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
@@ -499,9 +499,9 @@ public:
 
                 if (config.contains("endy")) {
                     adw_spin_row_set_value(ADW_SPIN_ROW(endy_entry), toml::find<unsigned short>(config, "endy"));
-                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_switch), TRUE);
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_check_button), TRUE);
                 } else {
-                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_switch), FALSE);
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_check_button), FALSE);
                 }
 
                 gtk_widget_set_sensitive(save_button, dirty = false);
@@ -604,7 +604,7 @@ public:
                     {"cert", gtk_editable_get_text(GTK_EDITABLE(cert_entry))},
                     {"key", gtk_editable_get_text(GTK_EDITABLE(key_entry))},
                 });
-                if (gtk_check_button_get_active(GTK_CHECK_BUTTON(endy_switch))) {
+                if (gtk_check_button_get_active(GTK_CHECK_BUTTON(endy_check_button))) {
                     config["endy"] = (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(endy_entry));
                 }
 
