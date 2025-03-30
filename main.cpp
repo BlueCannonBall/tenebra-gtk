@@ -209,7 +209,7 @@ public:
         adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), save_button);
 
         GtkWidget* refresh_button = gtk_button_new_from_icon_name("view-refresh-symbolic");
-        gtk_widget_set_tooltip_text(save_button, "Refresh");
+        gtk_widget_set_tooltip_text(refresh_button, "Refresh");
         glib::connect_signal(refresh_button, "clicked", [this](GtkWidget*) {
             refresh(true);
         });
