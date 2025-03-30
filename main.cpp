@@ -108,6 +108,8 @@ protected:
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
     GtkWidget* startx_entry;
+    GtkWidget* endy_entry;
+    GtkWidget* endy_switch;
     GtkWidget* vbv_buf_capacity_entry;
     GtkWidget* tcp_upnp_switch;
     GtkWidget* sound_forwarding_switch;
@@ -262,6 +264,17 @@ public:
         glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), startx_entry, -1);
 
+        endy_entry = adw_spin_row_new_with_range(0., 65535., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endy_entry), "End y");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(endy_entry), "The y-coordinate to stop streaming at");
+        glib::connect_signal<GParamSpec*>(endy_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), endy_entry, -1);
+
+        endy_switch = gtk_check_button_new();
+        gtk_widget_set_valign(endy_switch, GTK_ALIGN_CENTER);
+        glib::connect_signal<GParamSpec*>(endy_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        adw_action_row_add_prefix(ADW_ACTION_ROW(endy_entry), endy_switch);
+
         vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "Sets the size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
@@ -355,6 +368,7 @@ public:
 
 #ifdef __APPLE__
         gtk_widget_set_sensitive(startx_entry, FALSE);
+        gtk_widget_set_sensitive(endy_entry, FALSE);
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #endif
@@ -450,6 +464,7 @@ public:
 
             try {
                 auto config = toml::parse(config_path / "config.toml");
+
                 auto password = toml::find<std::string>(config, "password");
                 auto port = toml::find<unsigned short>(config, "port");
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
@@ -477,6 +492,13 @@ public:
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), !no_bwe);
                 gtk_editable_set_text(GTK_EDITABLE(cert_entry), cert.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(key_entry), key.c_str());
+
+                if (config.contains("endy")) {
+                    adw_spin_row_set_value(ADW_SPIN_ROW(endy_entry), toml::find<unsigned short>(config, "endy"));
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_switch), TRUE);
+                } else {
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endy_switch), FALSE);
+                }
 
                 gtk_widget_set_sensitive(save_button, dirty = false);
             } catch (const std::exception& e) {
@@ -578,6 +600,10 @@ public:
                     {"cert", gtk_editable_get_text(GTK_EDITABLE(cert_entry))},
                     {"key", gtk_editable_get_text(GTK_EDITABLE(key_entry))},
                 });
+                if (gtk_check_button_get_active(GTK_CHECK_BUTTON(endy_switch))) {
+                    config["endy"] = (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(endy_entry));
+                }
+
                 if (config_file << config << std::flush) {
                     gtk_widget_set_sensitive(save_button, dirty = false);
                     if (show_success_toast) {
@@ -594,7 +620,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    signal(SIGCHLD, [](int sig) {
+    signal(SIGCHLD, [](int) {
         waitpid(-1, nullptr, WNOHANG);
     });
 
