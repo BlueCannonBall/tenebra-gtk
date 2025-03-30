@@ -202,12 +202,14 @@ public:
         gtk_box_append(GTK_BOX(running_box), restart_button);
 
         save_button = gtk_button_new_from_icon_name("document-save-symbolic");
+        gtk_widget_set_tooltip_text(save_button, "Save");
         glib::connect_signal(save_button, "clicked", [this](GtkWidget*) {
             save(false);
         });
         adw_header_bar_pack_start(ADW_HEADER_BAR(header_bar), save_button);
 
         GtkWidget* refresh_button = gtk_button_new_from_icon_name("view-refresh-symbolic");
+        gtk_widget_set_tooltip_text(save_button, "Refresh");
         glib::connect_signal(refresh_button, "clicked", [this](GtkWidget*) {
             refresh(true);
         });
