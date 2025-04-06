@@ -108,6 +108,9 @@ protected:
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
     GtkWidget* startx_entry;
+    GtkWidget* starty_entry;
+    GtkWidget* endx_entry;
+    GtkWidget* endx_check_button;
     GtkWidget* endy_entry;
     GtkWidget* endy_check_button;
     GtkWidget* vbv_buf_capacity_entry;
@@ -266,6 +269,23 @@ public:
         glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), startx_entry, -1);
 
+        starty_entry = adw_spin_row_new_with_range(0., 65535., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(starty_entry), "Start y");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(starty_entry), "The y-coordinate to stream at");
+        glib::connect_signal<GParamSpec*>(starty_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), starty_entry, -1);
+
+        endx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endx_entry), "End x");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(endx_entry), "The x-coordinate to stop streaming at");
+        glib::connect_signal<GParamSpec*>(endx_entry, "notify::value", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), endx_entry, -1);
+
+        endx_check_button = gtk_check_button_new();
+        gtk_widget_set_valign(endx_check_button, GTK_ALIGN_CENTER);
+        glib::connect_signal<GParamSpec*>(endx_check_button, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        adw_action_row_add_prefix(ADW_ACTION_ROW(endx_entry), endx_check_button);
+
         endy_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endy_entry), "End y");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(endy_entry), "The y-coordinate to stop streaming at");
@@ -374,6 +394,8 @@ public:
 
 #ifdef __APPLE__
         gtk_widget_set_sensitive(startx_entry, FALSE);
+        gtk_widget_set_sensitive(starty_entry, FALSE);
+        gtk_widget_set_sensitive(endx_entry, FALSE);
         gtk_widget_set_sensitive(endy_entry, FALSE);
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
@@ -475,6 +497,7 @@ public:
                 auto port = toml::find<unsigned short>(config, "port");
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
                 auto startx = toml::find<unsigned short>(config, "startx");
+                auto starty = toml::find_or<unsigned short>(config, "starty", 0);
                 auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
                 auto tcp_upnp = toml::find<bool>(config, "tcp_upnp");
                 auto sound_forwarding = toml::find<bool>(config, "sound_forwarding");
@@ -489,6 +512,7 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
+                adw_spin_row_set_value(ADW_SPIN_ROW(starty_entry), starty);
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), tcp_upnp);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), sound_forwarding);
@@ -498,6 +522,13 @@ public:
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), !no_bwe);
                 gtk_editable_set_text(GTK_EDITABLE(cert_entry), cert.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(key_entry), key.c_str());
+
+                if (config.contains("endx")) {
+                    adw_spin_row_set_value(ADW_SPIN_ROW(endx_entry), toml::find<unsigned short>(config, "endx"));
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endx_check_button), TRUE);
+                } else {
+                    gtk_check_button_set_active(GTK_CHECK_BUTTON(endx_check_button), FALSE);
+                }
 
                 if (config.contains("endy")) {
                     adw_spin_row_set_value(ADW_SPIN_ROW(endy_entry), toml::find<unsigned short>(config, "endy"));
@@ -596,6 +627,7 @@ public:
                     {"port", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))},
                     {"target_bitrate", (unsigned int) adw_spin_row_get_value(ADW_SPIN_ROW(target_bitrate_entry))},
                     {"startx", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(startx_entry))},
+                    {"starty", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(starty_entry))},
                     {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
                     {"tcp_upnp", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(tcp_upnp_switch))},
                     {"sound_forwarding", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(sound_forwarding_switch))},
@@ -606,6 +638,9 @@ public:
                     {"cert", gtk_editable_get_text(GTK_EDITABLE(cert_entry))},
                     {"key", gtk_editable_get_text(GTK_EDITABLE(key_entry))},
                 });
+                if (gtk_check_button_get_active(GTK_CHECK_BUTTON(endx_check_button))) {
+                    config["endx"] = (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(endx_entry));
+                }
                 if (gtk_check_button_get_active(GTK_CHECK_BUTTON(endy_check_button))) {
                     config["endy"] = (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(endy_entry));
                 }
