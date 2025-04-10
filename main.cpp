@@ -118,7 +118,7 @@ protected:
     GtkWidget* sound_forwarding_switch;
     GtkWidget* hwencode_switch;
     GtkWidget* vapostproc_switch;
-    GtkWidget* fullchroma_switch;
+    GtkWidget* downsample_color_switch;
     GtkWidget* bwe_switch;
     GtkWidget* cert_entry;
     GtkWidget* key_entry;
@@ -333,8 +333,8 @@ public:
 #else
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
 #endif
-                gtk_widget_set_sensitive(fullchroma_switch, FALSE);
-                adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), FALSE);
+                gtk_widget_set_sensitive(downsample_color_switch, FALSE);
+                adw_switch_row_set_active(ADW_SWITCH_ROW(downsample_color_switch), TRUE);
             } else {
 #ifdef __APPLE__
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
@@ -343,7 +343,7 @@ public:
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
 #endif
-                gtk_widget_set_sensitive(fullchroma_switch, TRUE);
+                gtk_widget_set_sensitive(downsample_color_switch, TRUE);
             }
         });
         gtk_list_box_insert(GTK_LIST_BOX(list_box), hwencode_switch, -1);
@@ -355,11 +355,12 @@ public:
         glib::connect_signal<GParamSpec*>(vapostproc_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vapostproc_switch, -1);
 
-        fullchroma_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(fullchroma_switch), "FullChroma™");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(fullchroma_switch), "Improves color fidelity at the cost of performance");
-        glib::connect_signal<GParamSpec*>(fullchroma_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), fullchroma_switch, -1);
+        downsample_color_switch = adw_switch_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(downsample_color_switch), "Downsample color channels");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(downsample_color_switch), "Encodes frames in NV12 format");
+        adw_switch_row_set_active(ADW_SWITCH_ROW(downsample_color_switch), TRUE);
+        glib::connect_signal<GParamSpec*>(downsample_color_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), downsample_color_switch, -1);
 
         bwe_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bwe_switch), "Bandwidth estimation");
@@ -518,7 +519,7 @@ public:
                 adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), sound_forwarding);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(hwencode_switch), hwencode);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), vapostproc);
-                adw_switch_row_set_active(ADW_SWITCH_ROW(fullchroma_switch), full_chroma);
+                adw_switch_row_set_active(ADW_SWITCH_ROW(downsample_color_switch), !full_chroma);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), !no_bwe);
                 gtk_editable_set_text(GTK_EDITABLE(cert_entry), cert.c_str());
                 gtk_editable_set_text(GTK_EDITABLE(key_entry), key.c_str());
@@ -633,7 +634,7 @@ public:
                     {"sound_forwarding", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(sound_forwarding_switch))},
                     {"hwencode", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))},
                     {"vapostproc", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(vapostproc_switch))},
-                    {"full_chroma", (bool) adw_switch_row_get_active(ADW_SWITCH_ROW(fullchroma_switch))},
+                    {"full_chroma", !adw_switch_row_get_active(ADW_SWITCH_ROW(downsample_color_switch))},
                     {"no_bwe", !adw_switch_row_get_active(ADW_SWITCH_ROW(bwe_switch))},
                     {"cert", gtk_editable_get_text(GTK_EDITABLE(cert_entry))},
                     {"key", gtk_editable_get_text(GTK_EDITABLE(key_entry))},
