@@ -313,7 +313,9 @@ public:
 
         sound_forwarding_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(sound_forwarding_switch), "Sound forwarding");
+#ifndef __APPLE__
         adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), TRUE);
+#endif
         glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&Tenebra::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), sound_forwarding_switch, -1);
 
