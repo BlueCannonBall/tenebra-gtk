@@ -1,9 +1,10 @@
 [paths]
 output = "tenebra-gtk"
-source = ["."]
+source = [".", "Polyweb", "Polyweb/Polynet"]
 artifact = "obj"
 install = "/usr/local/bin"
 
 [options]
 compilation-flags = "-Wall -Wno-unused-result -std=c++17 -O3"
+libraries = ["ssl", "crypto"]
 pkg-config-libraries = ["libadwaita-1", "gtk4"]
