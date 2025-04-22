@@ -126,6 +126,7 @@ protected:
     GtkWidget* start_button;
     GtkWidget* running_box;
     GtkWidget* save_button;
+    GtkWidget* share_button;
 
     GtkWidget* password_entry;
     GtkWidget* port_entry;
@@ -288,10 +289,11 @@ public:
 
             gdk_clipboard_set_text(gdk_display_get_clipboard(gtk_widget_get_display(copy_link_button)), url_info.build().c_str());
             show_toast("Copied shareable one-time link to clipboard");
+            gtk_menu_button_popdown(GTK_MENU_BUTTON(share_button));
         });
         gtk_box_append(GTK_BOX(share_box), copy_link_button);
 
-        GtkWidget* share_button = gtk_menu_button_new();
+        share_button = gtk_menu_button_new();
         gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(share_button), "emblem-shared-symbolic");
         gtk_widget_set_tooltip_text(share_button, "Share");
         gtk_menu_button_set_popover(GTK_MENU_BUTTON(share_button), share_popover);
