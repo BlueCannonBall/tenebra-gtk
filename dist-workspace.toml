@@ -5,7 +5,7 @@ members = ["dist:."]
 name = "tenebra-gtk"
 # (Optional) Descriptive text about your package; some installers will present this to users
 description = "A GTK 4 frontend for Tenebra built with libadwaita."
-version = "0.6.0"
+version = "0.6.1"
 license = "GPL-3.0-only"
 repository = "https://github.com/BlueCannonBall/tenebra-gtk"
 binaries = ["tenebra-gtk"]
@@ -29,6 +29,7 @@ install-updater = false
 [dist.dependencies.apt]
 libgtk-4-dev = "*"
 libadwaita-1-dev = "*"
+libssl-dev = "*"
 
 [dist.github-custom-runners]
 x86_64-unknown-linux-gnu = "ubuntu-latest"
