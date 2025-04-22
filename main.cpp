@@ -283,11 +283,13 @@ public:
             pw::URLInfo url_info;
             url_info.scheme = "https";
             url_info.host = "audacia.duckdns.org";
-            url_info.query_parameters->insert({"address", gtk_editable_get_text(GTK_EDITABLE(address_entry))});
-            url_info.query_parameters->insert({"key", resp.body_string()});
-            url_info.query_parameters->insert({"view_only", gtk_check_button_get_active(GTK_CHECK_BUTTON(view_only_check_button)) ? "true" : "false"});
-
+            *url_info.query_parameters = {
+                {"address", gtk_editable_get_text(GTK_EDITABLE(address_entry))},
+                {"key", resp.body_string()},
+                {"view_only", gtk_check_button_get_active(GTK_CHECK_BUTTON(view_only_check_button)) ? "true" : "false"},
+            };
             gdk_clipboard_set_text(gdk_display_get_clipboard(gtk_widget_get_display(copy_link_button)), url_info.build().c_str());
+
             show_toast("Copied shareable one-time link to clipboard");
             gtk_menu_button_popdown(GTK_MENU_BUTTON(share_button));
         });
