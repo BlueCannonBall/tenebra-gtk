@@ -290,7 +290,7 @@ public:
             };
             gdk_clipboard_set_text(gdk_display_get_clipboard(gtk_widget_get_display(copy_link_button)), url_info.build().c_str());
 
-            show_toast("Copied shareable one-time link to clipboard");
+            show_toast("Copied one-time access link to clipboard");
             gtk_menu_button_popdown(GTK_MENU_BUTTON(share_button));
         });
         gtk_box_append(GTK_BOX(share_box), copy_link_button);
