@@ -249,7 +249,7 @@ public:
         gtk_widget_set_margin_bottom(share_box, 3);
         gtk_widget_set_margin_start(share_box, 3);
         gtk_widget_set_margin_end(share_box, 3);
-        gtk_box_set_spacing(GTK_BOX(share_box), 8);
+        gtk_box_set_spacing(GTK_BOX(share_box), 6);
         gtk_widget_set_size_request(share_box, 225, -1);
         gtk_popover_set_child(GTK_POPOVER(share_popover), share_box);
 
