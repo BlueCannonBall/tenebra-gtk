@@ -655,9 +655,17 @@ public:
             close(pipe_fds[0]); // Close unused read end
             fcntl(pipe_fds[1], F_SETFD, FD_CLOEXEC);
 
-            freopen("/dev/null", "r", stdin);
-            freopen("/dev/null", "w", stdout);
-            freopen("/dev/null", "w", stderr);
+            int null_fd;
+            if ((null_fd = open("/dev/null", O_RDWR)) == -1) {
+                int error = errno;
+                write(pipe_fds[1], &error, sizeof(int));
+                close(pipe_fds[1]);
+                exit(EXIT_FAILURE);
+            }
+            dup2(null_fd, STDIN_FILENO);
+            dup2(null_fd, STDOUT_FILENO);
+            dup2(null_fd, STDERR_FILENO);
+            close(null_fd);
 
             setsid();
             if (execlp("tenebra", "tenebra", nullptr) == -1) {
