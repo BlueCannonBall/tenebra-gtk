@@ -3,9 +3,6 @@
 #include "json.hpp"
 #include "toml.hpp"
 #include <adwaita.h>
-#include <algorithm>
-#include <ctype.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -13,24 +10,45 @@
 #include <gtk/gtk.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
-#include <sys/wait.h>
-#include <thread>
-#include <unistd.h>
-#ifndef __linux__
-    #include <sys/sysctl.h>
-    #include <sys/types.h>
-    #include <vector>
+#ifdef _WIN32
+    #include <shellapi.h>
+    #include <stdint.h>
+    #include <stdlib.h>
+    #include <tlhelp32.h>
+    #include <windows.h>
+#else
+    #include <errno.h>
+    #include <signal.h>
+    #include <sys/wait.h>
+    #include <thread>
+    #include <unistd.h>
+    #ifdef __linux__
+        #include <algorithm>
+        #include <ctype.h>
+    #else
+        #include <sys/sysctl.h>
+        #include <sys/types.h>
+        #include <vector>
+    #endif
 #endif
 
 using nlohmann::json;
 
+// Bridged
+#ifdef _WIN32
+typedef int64_t pid_t;
+#endif
+
 std::filesystem::path get_config_path() {
     std::filesystem::path ret;
-#ifdef __APPLE__
+#ifdef _WIN32
+    if (char* appdata = getenv("APPDATA")) {
+        ret = std::filesystem::path(appdata) / "tenebra";
+    }
+#elif defined(__APPLE__)
     if (char* home = getenv("HOME")) {
         ret = std::filesystem::path(home) / "Library" / "Application Support" / "tenebra";
     }
@@ -45,12 +63,38 @@ std::filesystem::path get_config_path() {
 }
 
 pid_t get_tenebra_pid() {
-#ifdef __linux__
+#ifdef _WIN32
+    HANDLE snapshot;
+    if ((snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)) == INVALID_HANDLE_VALUE) {
+        return -1;
+    }
+
+    PROCESSENTRY32 entry = {.dwSize = sizeof(PROCESSENTRY32)};
+    if (!Process32First(snapshot, &entry)) {
+        CloseHandle(snapshot);
+        return -1;
+    }
+    do {
+        if (entry.th32ProcessID == GetCurrentProcessId()) {
+            continue;
+        }
+
+        if (_strcmpi(entry.szExeFile, "tenebra.exe") == 0) {
+            CloseHandle(snapshot);
+            return entry.th32ProcessID;
+        }
+    } while (Process32Next(snapshot, &entry));
+
+    CloseHandle(snapshot);
+    return -1;
+#elif defined(__linux__)
     for (const auto& entry : std::filesystem::directory_iterator("/proc")) {
         if (entry.is_directory()) {
             std::filesystem::path path = entry.path();
             std::string filename = path.filename();
-            if (std::all_of(filename.begin(), filename.end(), isdigit)) {
+            if (std::all_of(filename.begin(), filename.end(), [](char c) -> bool {
+                    return isdigit((unsigned char) c);
+                })) {
                 pid_t pid;
                 if ((pid = std::stoi(filename)) == getpid()) {
                     continue;
@@ -404,8 +448,10 @@ public:
 
         hwencode_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hwencode_switch), "Hardware-accelerated video encoding");
-#ifdef __APPLE__
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses Apple VideoToolbox for video encoding");
+#ifdef _WIN32
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses Microsoft Media Foundation for video encoding and conversion");
+#elif defined(__APPLE__)
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses Apple VideoToolbox for video encoding and conversion");
 #else
         adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses VA-API on devices with Intel or AMD GPUs");
 #endif
@@ -416,7 +462,7 @@ public:
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(bwe_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), FALSE);
-#else
+#elif !defined(_WIN32)
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
 #endif
                 gtk_widget_set_sensitive(color_downsampling_switch, FALSE);
@@ -425,7 +471,7 @@ public:
 #ifdef __APPLE__
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
                 gtk_widget_set_sensitive(bwe_switch, TRUE);
-#else
+#elif !defined(_WIN32)
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
 #endif
@@ -479,7 +525,9 @@ public:
         glib::connect_signal<GtkWidget*>(choose_key_button, "clicked", std::bind(&TenebraWindow::handle_choose_file, this, std::placeholders::_1, key_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
-#ifdef __APPLE__
+#ifdef _WIN32
+        gtk_widget_set_sensitive(vapostproc_switch, FALSE);
+#elif defined(__APPLE__)
         gtk_widget_set_sensitive(startx_entry, FALSE);
         gtk_widget_set_sensitive(starty_entry, FALSE);
         gtk_widget_set_sensitive(endx_entry, FALSE);
@@ -625,8 +673,8 @@ public:
                 }
 
                 gtk_widget_set_sensitive(save_button, dirty = false);
-            } catch (const std::exception& e) {
-                show_toast("Failed to parse existing settings at " + std::string(config_path / "config.toml"));
+            } catch (...) {
+                show_toast("Failed to parse existing settings at " + (config_path / "config.toml").string());
             }
         }
 
@@ -640,6 +688,27 @@ public:
     int start() {
         if (save(false) == -1) return -1;
 
+#ifdef _WIN32
+        char cmdline[] = "tenebra.exe";
+        STARTUPINFO startup_info = {0};
+        PROCESS_INFORMATION process_info = {0};
+        if (!CreateProcess(
+                nullptr,
+                cmdline,
+                nullptr,
+                nullptr,
+                FALSE,
+                DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW,
+                nullptr,
+                nullptr,
+                &startup_info,
+                &process_info)) {
+            show_toast("Failed to start Tenebra (CreateProcess failed)");
+            return -1;
+        }
+        CloseHandle(process_info.hProcess);
+        CloseHandle(process_info.hThread);
+#else
         int pipe_fds[2];
         if (pipe(pipe_fds) == -1) {
             show_toast("Failed to start Tenebra (pipe creation failed)");
@@ -686,11 +755,25 @@ public:
         }
 
         close(pipe_fds[0]);
+#endif
         return 0;
     }
 
     int stop(bool show_not_running_toast = true) {
         if (pid_t pid = get_tenebra_pid(); pid != -1) {
+#ifdef _WIN32
+            HANDLE process;
+            if ((process = OpenProcess(PROCESS_TERMINATE, FALSE, pid)) == nullptr) {
+                show_toast("Failed to stop Tenebra (OpenProcess failed)");
+                return -1;
+            }
+            if (!TerminateProcess(process, 1)) {
+                show_toast("Failed to stop Tenebra (TerminateProcess failed)");
+                CloseHandle(process);
+                return -1;
+            }
+            CloseHandle(process);
+#else
             if (kill(pid, SIGTERM) == -1) {
                 show_toast("Failed to stop Tenebra (error " + std::to_string(errno) + ')');
                 return -1;
@@ -702,6 +785,7 @@ public:
                     break;
                 }
             }
+#endif
         } else if (show_not_running_toast) {
             show_toast("Tenebra wasn't running in the first place 🫤");
         }
@@ -743,26 +827,53 @@ public:
                 if (config_file << config << std::flush) {
                     gtk_widget_set_sensitive(save_button, dirty = false);
                     if (show_success_toast) {
-                        show_toast("Settings saved to " + std::string(config_path / "config.toml"));
+                        show_toast("Settings saved to " + (config_path / "config.toml").string());
                     }
                     return 0;
                 }
             }
         }
 
-        show_toast("Failed to save settings to " + std::string(config_path / "config.toml"));
+        show_toast("Failed to save settings to " + (config_path / "config.toml").string());
         return -1;
     }
 };
 
 int main(int argc, char* argv[]) {
     pw::threadpool.resize(0);
+#ifdef _WIN32
+    BOOL is_admin = FALSE;
+    SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
+    if (PSID admin_group; AllocateAndInitializeSid(&nt_authority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &admin_group)) {
+        CheckTokenMembership(nullptr, admin_group, &is_admin);
+        FreeSid(admin_group);
+    }
+
+    if (!is_admin) {
+        SHELLEXECUTEINFO info = {.cbSize = sizeof(SHELLEXECUTEINFO)};
+        info.lpVerb = "runas";
+        info.lpFile = argv[0];
+        info.nShow = SW_SHOWNORMAL;
+        if (!ShellExecuteEx(&info)) {
+            MessageBox(nullptr, "This program must be run with elevated privileges to allow Tenebra to interact with other elevated programs.", "Error", MB_OK | MB_ICONSTOP);
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+#else
     signal(SIGCHLD, [](int) {
         waitpid(-1, nullptr, WNOHANG);
     });
+#endif
 
     TenebraWindow tenebra_window;
     glib::Object<AdwApplication> app = adw_application_new("org.telewindow.Tenebra", G_APPLICATION_DEFAULT_FLAGS);
     app.connect_signal("activate", std::bind(&TenebraWindow::handle_activate, &tenebra_window, std::placeholders::_1));
     return g_application_run(G_APPLICATION(app.get()), argc, argv);
 }
+
+#ifdef _WIN32
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+    return main(__argc, __argv);
+}
+#endif
