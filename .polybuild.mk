@@ -32,7 +32,7 @@ libraries := $(library_flag)ssl $(library_flag)crypto `pkg-config $(pkg_config_s
 prefix := /usr/local/bin
 
 ifeq ($(OS),Windows_NT)
-	compilation_flags := /W3 /std:c++20 /EHsc  /I"$(OPENSSL_ROOT_DIR)"/include /Ox $(dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
+	compilation_flags := /W3 /std:c++20 /EHsc /I"$(OPENSSL_ROOT_DIR)"/include /Ox $(dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
 	link_time_flags := /SUBSYSTEM:WINDOWS $(library_path_flag)"$(OPENSSL_ROOT_DIR)"/lib
 	libraries := $(library_flag)libssl.lib $(library_flag)libcrypto.lib $(library_flag)advapi32.lib $(library_flag)crypt32.lib $(library_flag)ws2_32.lib $(library_flag)shcore.lib $(library_flag)shell32.lib `pkg-config $(pkg_config_syntax) --libs libadwaita-1 gtk4`
 	prefix := C:\tenebra-gtk\bin
