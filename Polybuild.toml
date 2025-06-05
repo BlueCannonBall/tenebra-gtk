@@ -15,4 +15,4 @@ library = ["\"$(OPENSSL_ROOT_DIR)\"/lib"]
 [env.OS.Windows_NT.options]
 compilation-flags = "/W3 /std:c++20 /EHsc  /I\"$(OPENSSL_ROOT_DIR)\"/include /Ox"
 link-time-flags = "/SUBSYSTEM:WINDOWS"
-libraries = ["libssl.lib", "libcrypto.lib", "advapi32.lib", "crypt32.lib", "ws2_32.lib", "shell32.lib"]
+libraries = ["libssl.lib", "libcrypto.lib", "advapi32.lib", "crypt32.lib", "ws2_32.lib", "shcore.lib", "shell32.lib"]

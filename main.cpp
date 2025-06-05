@@ -11,12 +11,13 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string>
 #ifdef _WIN32
     #include <shellapi.h>
+    #include <shellscalingapi.h>
     #include <stdint.h>
-    #include <stdlib.h>
     #include <tlhelp32.h>
     #include <windows.h>
 #else
@@ -855,6 +856,7 @@ int main(int argc, char* argv[]) {
         info.lpFile = argv[0];
         info.nShow = SW_SHOWNORMAL;
         if (!ShellExecuteEx(&info)) {
+            SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
             MessageBox(nullptr, "This program must be run with elevated privileges to allow Tenebra to interact with other elevated programs.", "Error", MB_OK | MB_ICONSTOP);
             return EXIT_FAILURE;
         }
