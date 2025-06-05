@@ -856,7 +856,7 @@ int main(int argc, char* argv[]) {
         info.lpFile = argv[0];
         info.nShow = SW_SHOWNORMAL;
         if (!ShellExecuteEx(&info)) {
-            SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+            SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
             MessageBox(nullptr, "This program must be run with elevated privileges to allow Tenebra to interact with other elevated programs.", "Error", MB_OK | MB_ICONERROR);
             return EXIT_FAILURE;
         }
