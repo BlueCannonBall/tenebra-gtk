@@ -176,6 +176,7 @@ protected:
     GtkWidget* password_entry;
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
+    GtkWidget* windows_monitor_index_entry;
     GtkWidget* startx_entry;
     GtkWidget* starty_entry;
     GtkWidget* endx_entry;
@@ -391,6 +392,13 @@ public:
         glib::connect_signal<GParamSpec*>(target_bitrate_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), target_bitrate_entry, -1);
 
+        windows_monitor_index_entry = adw_spin_row_new_with_range(-1., 65535., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_monitor_index_entry), "Monitor index");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_monitor_index_entry), "The index of the monitor to capture (-1 = primary monitor)");
+        adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), -1.);
+        glib::connect_signal<GParamSpec*>(windows_monitor_index_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_monitor_index_entry, -1);
+
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to stream at");
@@ -529,12 +537,15 @@ public:
 #ifdef _WIN32
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #elif defined(__APPLE__)
+        gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
         gtk_widget_set_sensitive(startx_entry, FALSE);
         gtk_widget_set_sensitive(starty_entry, FALSE);
         gtk_widget_set_sensitive(endx_entry, FALSE);
         gtk_widget_set_sensitive(endy_entry, FALSE);
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
+#else
+        gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
 #endif
 
         refresh();
@@ -632,6 +643,7 @@ public:
                 auto password = toml::find<std::string>(config, "password");
                 auto port = toml::find<unsigned short>(config, "port");
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
+                auto windows_monitor_index = toml::find_or<int>(config, "windows_monitor_index", -1);
                 auto startx = toml::find<unsigned short>(config, "startx");
                 auto starty = toml::find_or<unsigned short>(config, "starty", 0);
                 auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
@@ -647,6 +659,7 @@ public:
                 gtk_editable_set_text(GTK_EDITABLE(password_entry), password.c_str());
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
+                adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), windows_monitor_index);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
                 adw_spin_row_set_value(ADW_SPIN_ROW(starty_entry), starty);
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
@@ -806,6 +819,7 @@ public:
                     {"password", gtk_editable_get_text(GTK_EDITABLE(password_entry))},
                     {"port", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))},
                     {"target_bitrate", (unsigned int) adw_spin_row_get_value(ADW_SPIN_ROW(target_bitrate_entry))},
+                    {"windows_monitor_index", (int) adw_spin_row_get_value(ADW_SPIN_ROW(windows_monitor_index_entry))},
                     {"startx", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(startx_entry))},
                     {"starty", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(starty_entry))},
                     {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
