@@ -46,9 +46,7 @@ typedef int64_t pid_t;
 std::filesystem::path get_config_path() {
     std::filesystem::path ret;
 #ifdef _WIN32
-    if (char* appdata = getenv("APPDATA")) {
-        ret = std::filesystem::path(appdata) / "tenebra";
-    }
+    ret = "C:\\tenebra";
 #elif defined(__APPLE__)
     if (char* home = getenv("HOME")) {
         ret = std::filesystem::path(home) / "Library" / "Application Support" / "tenebra";
@@ -703,34 +701,37 @@ public:
         if (save(false) == -1) return -1;
 
 #ifdef _WIN32
-        char cmdline[] = "tenebra.exe";
-        STARTUPINFO startup_info = {0};
-        PROCESS_INFORMATION process_info = {0};
-        if (!CreateProcess(
-                nullptr,
-                cmdline,
-                nullptr,
-                nullptr,
-                FALSE,
-                DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW,
-                nullptr,
-                nullptr,
-                &startup_info,
-                &process_info)) {
-            show_toast("Failed to start Tenebra (CreateProcess failed)");
+        SC_HANDLE sc_manager;
+        if (!(sc_manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT))) {
+            show_toast("Failed to start Tenebra (OpenSCManager failed, error " + std::to_string(GetLastError()) + ')');
             return -1;
         }
-        CloseHandle(process_info.hProcess);
-        CloseHandle(process_info.hThread);
+
+        SC_HANDLE service;
+        if (!(service = OpenService(sc_manager, "Tenebra", SERVICE_START))) {
+            show_toast("Failed to start Tenebra (OpenSCManager failed, error " + std::to_string(GetLastError()) + ')');
+            CloseServiceHandle(sc_manager);
+            return -1;
+        }
+
+        if (!StartService(service, 0, nullptr)) {
+            show_toast("Failed to start Tenebra (StartService failed, error " + std::to_string(GetLastError()) + ')');
+            CloseServiceHandle(service);
+            CloseServiceHandle(sc_manager);
+            return -1;
+        }
+
+        CloseServiceHandle(service);
+        CloseServiceHandle(sc_manager);
 #else
         int pipe_fds[2];
         if (pipe(pipe_fds) == -1) {
-            show_toast("Failed to start Tenebra (pipe creation failed)");
+            show_toast("Failed to start Tenebra (pipe failed, error " + std::to_string(errno) + ')');
             return -1;
         }
 
         if (pid_t pid = fork(); pid == -1) {
-            show_toast("Failed to start Tenebra (fork failed)");
+            show_toast("Failed to start Tenebra (fork failed, error " + std::to_string(errno) + ')');
             close(pipe_fds[0]);
             close(pipe_fds[1]);
             return -1;
