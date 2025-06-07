@@ -15,6 +15,7 @@
 #include <string.h>
 #include <string>
 #ifdef _WIN32
+    #include <ios>
     #include <shellapi.h>
     #include <shellscalingapi.h>
     #include <stdint.h>
@@ -858,6 +859,14 @@ public:
 int main(int argc, char* argv[]) {
     pw::threadpool.resize(0);
 #ifdef _WIN32
+    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+        FILE* fp;
+        freopen_s(&fp, "CONOUT$", "w", stdout);
+        freopen_s(&fp, "CONOUT$", "w", stderr);
+        freopen_s(&fp, "CONIN$", "r", stdin);
+        std::ios::sync_with_stdio();
+    }
+
     BOOL is_admin = FALSE;
     SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
     if (PSID admin_group; AllocateAndInitializeSid(&nt_authority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &admin_group)) {
