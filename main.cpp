@@ -780,18 +780,18 @@ public:
 #ifdef _WIN32
             HANDLE process;
             if ((process = OpenProcess(PROCESS_TERMINATE, FALSE, pid)) == nullptr) {
-                show_toast("Failed to stop Tenebra (OpenProcess failed)");
+                show_toast("Failed to stop Tenebra (OpenProcess failed, error " + std::to_string(GetLastError()) + ')');
                 return -1;
             }
             if (!TerminateProcess(process, 1)) {
-                show_toast("Failed to stop Tenebra (TerminateProcess failed)");
+                show_toast("Failed to stop Tenebra (TerminateProcess failed, error " + std::to_string(GetLastError()) + ')');
                 CloseHandle(process);
                 return -1;
             }
             CloseHandle(process);
 #else
             if (kill(pid, SIGTERM) == -1) {
-                show_toast("Failed to stop Tenebra (error " + std::to_string(errno) + ')');
+                show_toast("Failed to stop Tenebra (kill failed, error " + std::to_string(errno) + ')');
                 return -1;
             }
 
