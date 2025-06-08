@@ -434,7 +434,7 @@ public:
 
         vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "Sets the size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "The size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
         adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), 120);
         glib::connect_signal<GParamSpec*>(vbv_buf_capacity_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vbv_buf_capacity_entry, -1);
