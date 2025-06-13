@@ -176,7 +176,7 @@ protected:
     GtkWidget* port_entry;
     GtkWidget* target_bitrate_entry;
     GtkWidget* windows_monitor_index_entry;
-    GtkWidget* windows_capture_api_entry;
+    GtkWidget* windows_capture_api_combo_box;
     GtkWidget* startx_entry;
     GtkWidget* starty_entry;
     GtkWidget* endx_entry;
@@ -399,14 +399,14 @@ public:
         glib::connect_signal<GParamSpec*>(windows_monitor_index_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_monitor_index_entry, -1);
 
-        windows_capture_api_entry = adw_combo_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_entry), "Windows capture API");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_entry), "The API to use for screen capture (DXGI is more compatible, but WGC is newer and more modern)");
+        windows_capture_api_combo_box = adw_combo_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_combo_box), "Windows capture API");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_combo_box), "The API to use for screen capture (DXGI is more compatible, but WGC is newer and more modern)");
         const char* capture_apis[] = {"dxgi", "wgc", nullptr};
-        adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_entry), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
-        adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), 0);
-        glib::connect_signal<GParamSpec*>(windows_capture_api_entry, "notify::selected", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_capture_api_entry, -1);
+        adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_combo_box), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
+        adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_combo_box), 0);
+        glib::connect_signal<GParamSpec*>(windows_capture_api_combo_box, "notify::selected", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_capture_api_combo_box, -1);
 
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
@@ -547,7 +547,7 @@ public:
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #elif defined(__APPLE__)
         gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
-        gtk_widget_set_sensitive(windows_capture_api_entry, FALSE);
+        gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
         gtk_widget_set_sensitive(startx_entry, FALSE);
         gtk_widget_set_sensitive(starty_entry, FALSE);
         gtk_widget_set_sensitive(endx_entry, FALSE);
@@ -556,7 +556,7 @@ public:
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #else
         gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
-        gtk_widget_set_sensitive(windows_capture_api_entry, FALSE);
+        gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
 #endif
 
         refresh();
@@ -672,7 +672,7 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
                 adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), windows_monitor_index);
-		adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), windows_capture_api == "wgc" ? 1 : 0);
+                adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_combo_box), windows_capture_api == "wgc" ? 1 : 0);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
                 adw_spin_row_set_value(ADW_SPIN_ROW(starty_entry), starty);
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
@@ -836,7 +836,7 @@ public:
                     {"port", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))},
                     {"target_bitrate", (unsigned int) adw_spin_row_get_value(ADW_SPIN_ROW(target_bitrate_entry))},
                     {"windows_monitor_index", (int) adw_spin_row_get_value(ADW_SPIN_ROW(windows_monitor_index_entry))},
-                    {"windows_capture_api", gtk_string_list_get_string(GTK_STRING_LIST(adw_combo_row_get_model(ADW_COMBO_ROW(windows_capture_api_entry))), adw_combo_row_get_selected(ADW_COMBO_ROW(windows_capture_api_entry)))},
+                    {"windows_capture_api", gtk_string_list_get_string(GTK_STRING_LIST(adw_combo_row_get_model(ADW_COMBO_ROW(windows_capture_api_combo_box))), adw_combo_row_get_selected(ADW_COMBO_ROW(windows_capture_api_combo_box)))},
                     {"startx", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(startx_entry))},
                     {"starty", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(starty_entry))},
                     {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
