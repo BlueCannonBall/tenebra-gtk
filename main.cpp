@@ -401,8 +401,8 @@ public:
 
         windows_capture_api_entry = adw_combo_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_entry), "Windows capture API");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_entry), "The API to use for screen capture (WGC is newer, but DXGI might be more compatible)");
-        const char* capture_apis[] = {"wgc", "dxgi", nullptr};
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_entry), "The API to use for screen capture (DXGI is more compatible, but WGC is newer and more modern)");
+        const char* capture_apis[] = {"dxgi", "wgc", nullptr};
         adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_entry), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
         adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), 0);
         glib::connect_signal<GParamSpec*>(windows_capture_api_entry, "notify::selected", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
@@ -655,7 +655,7 @@ public:
                 auto port = toml::find<unsigned short>(config, "port");
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
                 auto windows_monitor_index = toml::find_or<int>(config, "windows_monitor_index", -1);
-                auto windows_capture_api = toml::find_or<std::string>(config, "windows_capture_api", "wgc");
+                auto windows_capture_api = toml::find_or<std::string>(config, "windows_capture_api", "dxgi");
                 auto startx = toml::find<unsigned short>(config, "startx");
                 auto starty = toml::find_or<unsigned short>(config, "starty", 0);
                 auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
@@ -672,11 +672,7 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
                 adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), windows_monitor_index);
-                if (windows_capture_api == "dxgi") {
-                    adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), 1);
-                } else {
-                    adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), 0);
-                }
+		adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_entry), windows_capture_api == "wgc" ? 1 : 0);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
                 adw_spin_row_set_value(ADW_SPIN_ROW(starty_entry), starty);
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
