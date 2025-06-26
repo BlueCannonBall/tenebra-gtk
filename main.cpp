@@ -189,6 +189,7 @@ protected:
     GtkWidget* hwencode_switch;
     GtkWidget* vapostproc_switch;
     GtkWidget* color_downsampling_switch;
+    GtkWidget* windows_quality_vs_speed_entry;
     GtkWidget* bwe_switch;
     GtkWidget* cert_entry;
     GtkWidget* key_entry;
@@ -408,6 +409,13 @@ public:
         glib::connect_signal<GParamSpec*>(windows_capture_api_combo_box, "notify::selected", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_capture_api_combo_box, -1);
 
+        windows_quality_vs_speed_entry = adw_spin_row_new_with_range(0., 100., 1.);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_quality_vs_speed_entry), "Quality vs. Speed");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_quality_vs_speed_entry), "Higher values prioritize quality (0 = best speed, 100 = best quality)");
+        adw_spin_row_set_value(ADW_SPIN_ROW(windows_quality_vs_speed_entry), 50.);
+        glib::connect_signal<GParamSpec*>(windows_quality_vs_speed_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_quality_vs_speed_entry, -1);
+
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to stream at");
@@ -548,6 +556,7 @@ public:
 #elif defined(__APPLE__)
         gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
         gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
+        gtk_widget_set_sensitive(windows_quality_vs_speed_entry, FALSE);
         gtk_widget_set_sensitive(startx_entry, FALSE);
         gtk_widget_set_sensitive(starty_entry, FALSE);
         gtk_widget_set_sensitive(endx_entry, FALSE);
@@ -557,6 +566,7 @@ public:
 #else
         gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
         gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
+        gtk_widget_set_sensitive(windows_quality_vs_speed_entry, FALSE);
 #endif
 
         refresh();
@@ -656,6 +666,7 @@ public:
                 auto target_bitrate = toml::find<unsigned int>(config, "target_bitrate");
                 auto windows_monitor_index = toml::find_or<int>(config, "windows_monitor_index", -1);
                 auto windows_capture_api = toml::find_or<std::string>(config, "windows_capture_api", "dxgi");
+                auto windows_quality_vs_speed = toml::find_or<unsigned short>(config, "windows_quality_vs_speed", 50);
                 auto startx = toml::find<unsigned short>(config, "startx");
                 auto starty = toml::find_or<unsigned short>(config, "starty", 0);
                 auto vbv_buf_capacity = toml::find_or<unsigned short>(config, "vbv_buf_capacity", 120);
@@ -672,7 +683,8 @@ public:
                 adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), port);
                 adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), target_bitrate);
                 adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), windows_monitor_index);
-                adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_combo_box), windows_capture_api == "wgc" ? 1 : 0);
+                adw_spin_row_set_value(ADW_SPIN_ROW(windows_capture_api_combo_box), windows_capture_api == "wgc" ? 1 : 0);
+                adw_spin_row_set_value(ADW_SPIN_ROW(windows_quality_vs_speed_entry), windows_quality_vs_speed);
                 adw_spin_row_set_value(ADW_SPIN_ROW(startx_entry), startx);
                 adw_spin_row_set_value(ADW_SPIN_ROW(starty_entry), starty);
                 adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), vbv_buf_capacity);
@@ -837,6 +849,7 @@ public:
                     {"target_bitrate", (unsigned int) adw_spin_row_get_value(ADW_SPIN_ROW(target_bitrate_entry))},
                     {"windows_monitor_index", (int) adw_spin_row_get_value(ADW_SPIN_ROW(windows_monitor_index_entry))},
                     {"windows_capture_api", pw::string::to_lower_copy(gtk_string_list_get_string(GTK_STRING_LIST(adw_combo_row_get_model(ADW_COMBO_ROW(windows_capture_api_combo_box))), adw_combo_row_get_selected(ADW_COMBO_ROW(windows_capture_api_combo_box))))},
+                    {"windows_quality_vs_speed", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(windows_quality_vs_speed_entry))},
                     {"startx", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(startx_entry))},
                     {"starty", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(starty_entry))},
                     {"vbv_buf_capacity", (unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(vbv_buf_capacity_entry))},
