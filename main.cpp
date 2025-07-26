@@ -548,10 +548,6 @@ public:
 #elif defined(__APPLE__)
         gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
         gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
-        gtk_widget_set_sensitive(startx_entry, FALSE);
-        gtk_widget_set_sensitive(starty_entry, FALSE);
-        gtk_widget_set_sensitive(endx_entry, FALSE);
-        gtk_widget_set_sensitive(endy_entry, FALSE);
         gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
 #else
