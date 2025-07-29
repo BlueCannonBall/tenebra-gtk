@@ -270,7 +270,7 @@ public:
         gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_monitor_index_entry, -1);
 
         windows_capture_api_combo_box = adw_combo_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_combo_box), "Windows capture API");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_combo_box), "Screen capture API");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_combo_box), "The API to use for screen capture (DXGI is more compatible, but WGC is newer and more modern)");
         const char* capture_apis[] = {"DXGI", "WGC", nullptr};
         adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_combo_box), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
