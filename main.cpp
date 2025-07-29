@@ -360,26 +360,24 @@ public:
         glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", [this](GtkWidget* hwencode_switch, GParamSpec*) {
             if (adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))) {
-#ifdef __APPLE__
+#ifdef _WIN32
+                gtk_widget_set_sensitive(windows_quality_vs_speed_row, TRUE);
+#elif defined(__APPLE__)
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, FALSE);
                 gtk_widget_set_sensitive(bwe_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), FALSE);
 #else
-    #ifdef _WIN32
-                gtk_widget_set_sensitive(windows_quality_vs_speed_row, TRUE);
-    #endif
                 gtk_widget_set_sensitive(vapostproc_switch, TRUE);
 #endif
                 gtk_widget_set_sensitive(color_downsampling_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(color_downsampling_switch), TRUE);
             } else {
-#ifdef __APPLE__
+#ifdef _WIN32
+                gtk_widget_set_sensitive(windows_quality_vs_speed_row, FALSE);
+#elif defined(__APPLE__)
                 gtk_widget_set_sensitive(vbv_buf_capacity_entry, TRUE);
                 gtk_widget_set_sensitive(bwe_switch, TRUE);
 #else
-    #ifdef _WIN32
-                gtk_widget_set_sensitive(windows_quality_vs_speed_row, FALSE);
-    #endif
                 gtk_widget_set_sensitive(vapostproc_switch, FALSE);
                 adw_switch_row_set_active(ADW_SWITCH_ROW(vapostproc_switch), FALSE);
 #endif
@@ -433,7 +431,9 @@ public:
         glib::connect_signal(choose_key_button, "clicked", std::bind(&MainWindow::handle_choose_file, this, std::placeholders::_1, key_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
-#ifdef __APPLE__
+#ifdef _WIN32
+        gtk_widget_set_visible(vapostproc_switch, FALSE);
+#elif defined(__APPLE__)
         gtk_widget_set_visible(windows_monitor_index_entry, FALSE);
         gtk_widget_set_visible(windows_capture_api_combo_box, FALSE);
         gtk_widget_set_visible(windows_quality_vs_speed_row, FALSE);
