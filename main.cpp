@@ -27,7 +27,7 @@
 
 using nlohmann::json;
 
-class TenebraWindow {
+class MainWindow {
 protected:
     AdwApplication* app;
 
@@ -72,7 +72,7 @@ protected:
     }
 
 public:
-    TenebraWindow() = default;
+    MainWindow() = default;
 
     void handle_activate(AdwApplication* app) {
         window = gtk_application_window_new(GTK_APPLICATION(app));
@@ -247,26 +247,26 @@ public:
 
         password_entry = adw_password_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(password_entry), "Password");
-        glib::connect_signal<GParamSpec*>(password_entry, "notify::text", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(password_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), password_entry, -1);
 
         port_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(port_entry), "Port");
         adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), 8080);
-        glib::connect_signal<GParamSpec*>(port_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(port_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), port_entry, -1);
 
         target_bitrate_entry = adw_spin_row_new_with_range(50., 12000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(target_bitrate_entry), "Target bitrate");
         adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), 4000);
-        glib::connect_signal<GParamSpec*>(target_bitrate_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(target_bitrate_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), target_bitrate_entry, -1);
 
         windows_monitor_index_entry = adw_spin_row_new_with_range(-1., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_monitor_index_entry), "Monitor index");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_monitor_index_entry), "The index of the monitor to capture (-1 = primary monitor)");
         adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), -1.);
-        glib::connect_signal<GParamSpec*>(windows_monitor_index_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(windows_monitor_index_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_monitor_index_entry, -1);
 
         windows_capture_api_combo_box = adw_combo_row_new();
@@ -275,7 +275,7 @@ public:
         const char* capture_apis[] = {"DXGI", "WGC", nullptr};
         adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_combo_box), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
         adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_combo_box), 0);
-        glib::connect_signal<GParamSpec*>(windows_capture_api_combo_box, "notify::selected", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(windows_capture_api_combo_box, "notify::selected", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_capture_api_combo_box, -1);
 
         windows_quality_vs_speed_row = adw_action_row_new();
@@ -289,55 +289,55 @@ public:
         gtk_scale_add_mark(GTK_SCALE(windows_quality_vs_speed_scale), 50., GTK_POS_BOTTOM, nullptr);
         gtk_scale_set_draw_value(GTK_SCALE(windows_quality_vs_speed_scale), TRUE);
         gtk_widget_set_size_request(windows_quality_vs_speed_scale, 150, -1);
-        glib::connect_signal<GParamSpec*>(gtk_range_get_adjustment(GTK_RANGE(windows_quality_vs_speed_scale)), "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(gtk_range_get_adjustment(GTK_RANGE(windows_quality_vs_speed_scale)), "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         adw_action_row_add_suffix(ADW_ACTION_ROW(windows_quality_vs_speed_row), windows_quality_vs_speed_scale);
 
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to stream at");
-        glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), startx_entry, -1);
 
         starty_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(starty_entry), "Start y");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(starty_entry), "The y-coordinate to stream at");
-        glib::connect_signal<GParamSpec*>(starty_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(starty_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), starty_entry, -1);
 
         endx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endx_entry), "End x");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(endx_entry), "The x-coordinate to stop streaming at");
-        glib::connect_signal<GParamSpec*>(endx_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(endx_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), endx_entry, -1);
 
         endx_check_button = gtk_check_button_new();
         gtk_widget_set_valign(endx_check_button, GTK_ALIGN_CENTER);
-        glib::connect_signal<GParamSpec*>(endx_check_button, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(endx_check_button, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         adw_action_row_add_prefix(ADW_ACTION_ROW(endx_entry), endx_check_button);
 
         endy_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endy_entry), "End y");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(endy_entry), "The y-coordinate to stop streaming at");
-        glib::connect_signal<GParamSpec*>(endy_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(endy_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), endy_entry, -1);
 
         endy_check_button = gtk_check_button_new();
         gtk_widget_set_valign(endy_check_button, GTK_ALIGN_CENTER);
-        glib::connect_signal<GParamSpec*>(endy_check_button, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(endy_check_button, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         adw_action_row_add_prefix(ADW_ACTION_ROW(endy_entry), endy_check_button);
 
         vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "The size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
         adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), 120);
-        glib::connect_signal<GParamSpec*>(vbv_buf_capacity_entry, "notify::value", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(vbv_buf_capacity_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vbv_buf_capacity_entry, -1);
 
         tcp_upnp_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "Automatic ICE-TCP UPnP forwarding");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(tcp_upnp_switch), "Automatically port forwards TCP ports for ICE-TCP");
         adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), TRUE);
-        glib::connect_signal<GParamSpec*>(tcp_upnp_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(tcp_upnp_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), tcp_upnp_switch, -1);
 
         sound_forwarding_switch = adw_switch_row_new();
@@ -345,7 +345,7 @@ public:
 #ifndef __APPLE__
         adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), TRUE);
 #endif
-        glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), sound_forwarding_switch, -1);
 
         hwencode_switch = adw_switch_row_new();
@@ -357,7 +357,7 @@ public:
 #else
         adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses VA-API on devices with Intel or AMD GPUs");
 #endif
-        glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         glib::connect_signal<GParamSpec*>(hwencode_switch, "notify::active", [this](GtkWidget* hwencode_switch, GParamSpec*) {
             if (adw_switch_row_get_active(ADW_SWITCH_ROW(hwencode_switch))) {
 #ifdef __APPLE__
@@ -392,59 +392,62 @@ public:
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vapostproc_switch), "VA-API video conversion");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vapostproc_switch), "Enables hardware accelerated video format conversion on devices with Intel or AMD GPUs");
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
-        glib::connect_signal<GParamSpec*>(vapostproc_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(vapostproc_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), vapostproc_switch, -1);
 
         color_downsampling_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(color_downsampling_switch), "Color channel downsampling");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(color_downsampling_switch), "Encodes frames in NV12 format");
         adw_switch_row_set_active(ADW_SWITCH_ROW(color_downsampling_switch), TRUE);
-        glib::connect_signal<GParamSpec*>(color_downsampling_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(color_downsampling_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), color_downsampling_switch, -1);
 
         bwe_switch = adw_switch_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bwe_switch), "Bandwidth estimation");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(bwe_switch), "Adjusts media bitrate on the fly to adapt to changing network conditions");
         adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), TRUE);
-        glib::connect_signal<GParamSpec*>(bwe_switch, "notify::active", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(bwe_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), bwe_switch, -1);
 
         cert_entry = adw_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(cert_entry), "Certificate chain file");
-        glib::connect_signal<GParamSpec*>(cert_entry, "notify::text", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(cert_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), cert_entry, -1);
 
         GtkWidget* choose_cert_button = gtk_button_new_from_icon_name("document-open-symbolic");
         gtk_widget_set_tooltip_text(choose_cert_button, "Choose File");
         gtk_widget_set_valign(choose_cert_button, GTK_ALIGN_CENTER);
         gtk_widget_add_css_class(choose_cert_button, "flat");
-        glib::connect_signal(choose_cert_button, "clicked", std::bind(&TenebraWindow::handle_choose_file, this, std::placeholders::_1, cert_entry));
+        glib::connect_signal(choose_cert_button, "clicked", std::bind(&MainWindow::handle_choose_file, this, std::placeholders::_1, cert_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(cert_entry), choose_cert_button);
 
         key_entry = adw_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(key_entry), "Private key file");
-        glib::connect_signal<GParamSpec*>(key_entry, "notify::text", std::bind(&TenebraWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        glib::connect_signal<GParamSpec*>(key_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
         gtk_list_box_insert(GTK_LIST_BOX(list_box), key_entry, -1);
 
         GtkWidget* choose_key_button = gtk_button_new_from_icon_name("document-open-symbolic");
         gtk_widget_set_tooltip_text(choose_key_button, "Choose File");
         gtk_widget_set_valign(choose_key_button, GTK_ALIGN_CENTER);
         gtk_widget_add_css_class(choose_key_button, "flat");
-        glib::connect_signal(choose_key_button, "clicked", std::bind(&TenebraWindow::handle_choose_file, this, std::placeholders::_1, key_entry));
+        glib::connect_signal(choose_key_button, "clicked", std::bind(&MainWindow::handle_choose_file, this, std::placeholders::_1, key_entry));
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(key_entry), choose_key_button);
 
 #ifdef __APPLE__
-        gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
-        gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
-        gtk_widget_set_sensitive(sound_forwarding_switch, FALSE);
+        gtk_widget_set_visible(windows_monitor_index_entry, FALSE);
+        gtk_widget_set_visible(windows_capture_api_combo_box, FALSE);
+        gtk_widget_set_visible(windows_quality_vs_speed_row, FALSE);
+        gtk_widget_set_visible(sound_forwarding_switch, FALSE);
+        gtk_widget_set_visible(vapostproc_switch, FALSE);
 #else
-        gtk_widget_set_sensitive(windows_monitor_index_entry, FALSE);
-        gtk_widget_set_sensitive(windows_capture_api_combo_box, FALSE);
+        gtk_widget_set_visible(windows_monitor_index_entry, FALSE);
+        gtk_widget_set_visible(windows_capture_api_combo_box, FALSE);
+        gtk_widget_set_visible(windows_quality_vs_speed_row, FALSE);
 #endif
 
         refresh();
         g_timeout_add(2000, [](void* data) -> gboolean {
-            auto tenebra = (TenebraWindow*) data;
+            auto tenebra = (MainWindow*) data;
             if (get_tenebra_pid() == -1) {
                 gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
             } else {
@@ -793,9 +796,9 @@ int main(int argc, char* argv[]) {
     });
 #endif
 
-    TenebraWindow tenebra_window;
+    MainWindow window;
     glib::Object<AdwApplication> app = adw_application_new("org.telewindow.Tenebra", G_APPLICATION_DEFAULT_FLAGS);
-    app.connect_signal("activate", std::bind(&TenebraWindow::handle_activate, &tenebra_window, std::placeholders::_1));
+    app.connect_signal("activate", std::bind(&MainWindow::handle_activate, &window, std::placeholders::_1));
     return g_application_run(G_APPLICATION(app.get()), argc, argv);
 }
 
