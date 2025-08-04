@@ -535,6 +535,12 @@ public:
             return;
         }
 
+        if (get_tenebra_pid() == -1) {
+            gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
+        } else {
+            gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
+        }
+
         auto config_path = get_config_path();
         if (!config_path.empty()) {
             if (!std::filesystem::exists(config_path / "config.toml")) {
@@ -602,12 +608,6 @@ public:
             } catch (...) {
                 show_toast("Failed to parse existing settings at " + (config_path / "config.toml").string());
             }
-        }
-
-        if (get_tenebra_pid() == -1) {
-            gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
-        } else {
-            gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
         }
     }
 
