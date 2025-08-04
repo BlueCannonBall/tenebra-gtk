@@ -480,7 +480,7 @@ public:
 
         gtk_window_present(GTK_WINDOW(window));
         if (new_user) {
-            AdwDialog* dialog = adw_alert_dialog_new("Welcome!", "Welcome to Tenebra! Here, you can configure Tenebra's settings. Before starting Tenebra, make sure you have set a password and directed Tenebra to your TLS certificate.");
+            AdwDialog* dialog = adw_alert_dialog_new("Welcome!", "Welcome to Tenebra! Here, you can configure Tenebra's settings. Before starting, make sure you’ve set a password and directed it to your TLS certificate.");
             adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "thanks", "Thanks!", nullptr);
             adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "thanks", ADW_RESPONSE_SUGGESTED);
             adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "thanks");
