@@ -63,6 +63,7 @@ protected:
     GtkWidget* cert_entry;
     GtkWidget* key_entry;
 
+    bool new_user = false;
     bool dirty = true;
 
     void show_toast(const std::string& title, unsigned int timeout = 5) {
@@ -478,6 +479,13 @@ public:
         });
 
         gtk_window_present(GTK_WINDOW(window));
+        if (new_user) {
+            AdwDialog* dialog = adw_alert_dialog_new("Welcome!", "Welcome to Tenebra! Here, you can configure Tenebra's settings. Before starting Tenebra, make sure you have set a password and directed Tenebra to your TLS certificate.");
+            adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "thanks", "Thanks!", nullptr);
+            adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "thanks", ADW_RESPONSE_SUGGESTED);
+            adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "thanks");
+            adw_dialog_present(dialog, window);
+        }
     }
 
     void handle_change(void*, GParamSpec*) {
@@ -529,8 +537,11 @@ public:
 
         auto config_path = get_config_path();
         if (!config_path.empty()) {
-            if (!std::filesystem::exists(config_path)) {
-                std::filesystem::create_directory(config_path);
+            if (!std::filesystem::exists(config_path / "config.toml")) {
+                if (!std::filesystem::exists(config_path)) {
+                    std::filesystem::create_directory(config_path);
+                }
+                new_user = true;
                 return;
             }
 
