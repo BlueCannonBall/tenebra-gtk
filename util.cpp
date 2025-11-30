@@ -3,8 +3,10 @@
 #include <openssl/x509.h>
 #include <stdio.h>
 #ifdef _WIN32
-    #include <tlhelp32.h>
+// clang-format off
     #include <windows.h>
+    #include <tlhelp32.h>
+// clang-format on
 #else
     #include <stdlib.h>
     #include <sys/wait.h>
