@@ -75,6 +75,11 @@ public:
 
     void handle_activate(AdwApplication* app) {
         if (window) {
+            if (get_tenebra_pid() == -1) {
+                gtk_stack_set_visible_child(GTK_STACK(button_stack), start_button);
+            } else {
+                gtk_stack_set_visible_child(GTK_STACK(button_stack), running_box);
+            }
             gtk_widget_set_visible(window, TRUE);
             return;
         }
@@ -452,7 +457,7 @@ public:
         refresh();
         g_timeout_add(2000, [](void* data) -> gboolean {
             auto tenebra = (MainWindow*) data;
-            if (gtk_widget_get_visible(tenebra->window)) {
+            if (gtk_widget_is_visible(tenebra->window)) {
                 if (get_tenebra_pid() == -1) {
                     gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
                 } else {
