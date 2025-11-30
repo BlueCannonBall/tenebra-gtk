@@ -5,7 +5,7 @@ artifact = "obj"
 install = "/usr/local/bin"
 
 [options]
-compilation-flags = "-Wall -Wno-unused-result -std=c++17 -O3"
+compilation-flags = "-Wall -Wno-unused-result -std=c++20 -O3"
 libraries = ["ssl", "crypto"]
 pkg-config-libraries = ["libadwaita-1", "gtk4"]
 

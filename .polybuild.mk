@@ -28,7 +28,7 @@ endif
 c_compiler := $(CC)
 cpp_compiler := $(CXX)
 c_compilation_flags := $(CFLAGS) $(dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
-cpp_compilation_flags := -Wall -Wno-unused-result -std=c++17 -O3 $(dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
+cpp_compilation_flags := -Wall -Wno-unused-result -std=c++20 -O3 $(dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
 link_time_flags := $(LDFLAGS)
 libraries := $(library_flag)ssl $(library_flag)crypto `pkg-config $(pkg_config_syntax) --libs libadwaita-1 gtk4`
 prefix := /usr/local/bin

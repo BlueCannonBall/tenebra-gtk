@@ -29,9 +29,7 @@ using nlohmann::json;
 
 class MainWindow {
 protected:
-    AdwApplication* app;
-
-    GtkWidget* window;
+    GtkWidget* window = nullptr;
     GtkWidget* toast_overlay;
 
     GtkWidget* button_stack;
@@ -76,6 +74,11 @@ public:
     MainWindow() = default;
 
     void handle_activate(AdwApplication* app) {
+        if (window) {
+            gtk_widget_set_visible(window, TRUE);
+            return;
+        }
+
         window = gtk_application_window_new(GTK_APPLICATION(app));
         gtk_window_set_title(GTK_WINDOW(window), "Tenebra");
         gtk_window_set_default_size(GTK_WINDOW(window), 675, 600);
@@ -449,16 +452,18 @@ public:
         refresh();
         g_timeout_add(2000, [](void* data) -> gboolean {
             auto tenebra = (MainWindow*) data;
-            if (get_tenebra_pid() == -1) {
-                gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
-            } else {
-                gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->running_box);
+            if (gtk_widget_get_visible(tenebra->window)) {
+                if (get_tenebra_pid() == -1) {
+                    gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->start_button);
+                } else {
+                    gtk_stack_set_visible_child(GTK_STACK(tenebra->button_stack), tenebra->running_box);
+                }
             }
             return TRUE;
         },
             this);
 
-        glib::connect_signal(window, "close-request", [this, app](GtkWidget* window) -> gboolean {
+        glib::connect_signal(window, "close-request", [this](GtkWidget* window) -> gboolean {
             if (dirty) {
                 AdwDialog* dialog = adw_alert_dialog_new("Save Changes?", "You have unsaved changes. Changes that are not saved will be permanently lost.");
                 adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", "Cancel", "discard", "Discard", "save", "Save", nullptr);
@@ -466,16 +471,19 @@ public:
                 adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "save", ADW_RESPONSE_SUGGESTED);
                 adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "save");
                 adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
-                glib::connect_signal<gchar*>(dialog, "response", [this, app](AdwDialog*, gchar* response) {
+                glib::connect_signal<char*>(dialog, "response", [this, window](AdwDialog*, char* response) {
                     if (!strcmp(response, "save")) {
-                        if (!save(false)) g_application_quit(G_APPLICATION(app));
+                        if (!save(false)) gtk_widget_set_visible(window, FALSE);
                     } else if (!strcmp(response, "discard")) {
-                        g_application_quit(G_APPLICATION(app));
+                        refresh();
+                        gtk_widget_set_visible(window, FALSE);
                     }
                 });
                 adw_dialog_present(dialog, window);
+            } else {
+                gtk_widget_set_visible(window, FALSE);
             }
-            return dirty;
+            return TRUE;
         });
 
         gtk_window_present(GTK_WINDOW(window));
@@ -518,7 +526,7 @@ public:
             adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "save", ADW_RESPONSE_SUGGESTED);
             adw_alert_dialog_set_default_response(ADW_ALERT_DIALOG(dialog), "save");
             adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
-            glib::connect_signal<gchar*>(dialog, "response", [this](AdwDialog*, gchar* response) {
+            glib::connect_signal<char*>(dialog, "response", [this](AdwDialog*, char* response) {
                 if (!strcmp(response, "save")) {
                     save();
 
