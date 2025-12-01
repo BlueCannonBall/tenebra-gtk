@@ -37,7 +37,7 @@ ifeq ($(OS),Windows_NT)
 	c_compiler := $(CC)
 	cpp_compiler := $(CXX)
 	c_compilation_flags := $(CFLAGS) $(static_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
-	cpp_compilation_flags := /W3 /std:c++20 /EHsc /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(static_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
+	cpp_compilation_flags := /W3 /std:c++20 /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(static_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
 	link_time_flags := /SUBSYSTEM:WINDOWS $(library_path_flag)"$(OPENSSL_ROOT_DIR)"/lib
 	libraries := $(library_flag)libssl.lib $(library_flag)libcrypto.lib $(library_flag)advapi32.lib $(library_flag)crypt32.lib $(library_flag)ws2_32.lib $(library_flag)shcore.lib $(library_flag)shell32.lib `pkg-config $(pkg_config_syntax) --libs libadwaita-1 gtk4`
 	prefix := C:\tenebra-gtk\bin
@@ -46,13 +46,13 @@ endif
 all: tenebra-gtk$(out_ext)
 .PHONY: all
 
-obj/util_0$(obj_ext): ./util.cpp .polybuild.mk ./util.hpp
+obj/main_0$(obj_ext): ./main.cpp .polybuild.mk ./Polyweb/polyweb.hpp ./Polyweb/Polynet/polynet.hpp ./Polyweb/Polynet/string.hpp ./Polyweb/Polynet/secure_sockets.hpp ./Polyweb/Polynet/smart_sockets.hpp ./Polyweb/string.hpp ./Polyweb/threadpool.hpp ./glib.hpp ./json.hpp ./toml.hpp ./toml/parser.hpp ./toml/combinator.hpp ./toml/region.hpp ./toml/color.hpp ./toml/result.hpp ./toml/traits.hpp ./toml/from.hpp ./toml/into.hpp ./toml/version.hpp ./toml/utility.hpp ./toml/lexer.hpp ./toml/macros.hpp ./toml/types.hpp ./toml/comments.hpp ./toml/datetime.hpp ./toml/string.hpp ./toml/value.hpp ./toml/exception.hpp ./toml/source_location.hpp ./toml/storage.hpp ./toml/literal.hpp ./toml/serializer.hpp ./toml/get.hpp ./util.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/main_0$(obj_ext): ./main.cpp .polybuild.mk ./Polyweb/polyweb.hpp ./Polyweb/Polynet/polynet.hpp ./Polyweb/Polynet/string.hpp ./Polyweb/Polynet/secure_sockets.hpp ./Polyweb/Polynet/smart_sockets.hpp ./Polyweb/string.hpp ./Polyweb/threadpool.hpp ./glib.hpp ./json.hpp ./toml.hpp ./toml/parser.hpp ./toml/combinator.hpp ./toml/region.hpp ./toml/color.hpp ./toml/result.hpp ./toml/traits.hpp ./toml/from.hpp ./toml/into.hpp ./toml/version.hpp ./toml/utility.hpp ./toml/lexer.hpp ./toml/macros.hpp ./toml/types.hpp ./toml/comments.hpp ./toml/datetime.hpp ./toml/string.hpp ./toml/value.hpp ./toml/exception.hpp ./toml/source_location.hpp ./toml/storage.hpp ./toml/literal.hpp ./toml/serializer.hpp ./toml/get.hpp ./util.hpp
+obj/util_0$(obj_ext): ./util.cpp .polybuild.mk ./util.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
@@ -64,13 +64,13 @@ obj/client_0$(obj_ext): Polyweb/client.cpp .polybuild.mk Polyweb/polyweb.hpp Pol
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/server_0$(obj_ext): Polyweb/server.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
+obj/polyweb_0$(obj_ext): Polyweb/polyweb.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/websocket_0$(obj_ext): Polyweb/websocket.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
+obj/server_0$(obj_ext): Polyweb/server.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
@@ -82,7 +82,7 @@ obj/string_0$(obj_ext): Polyweb/string.cpp .polybuild.mk Polyweb/string.hpp Poly
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-obj/polyweb_0$(obj_ext): Polyweb/polyweb.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
+obj/websocket_0$(obj_ext): Polyweb/websocket.cpp .polybuild.mk Polyweb/polyweb.hpp Polyweb/Polynet/polynet.hpp Polyweb/Polynet/string.hpp Polyweb/Polynet/secure_sockets.hpp Polyweb/Polynet/smart_sockets.hpp Polyweb/string.hpp Polyweb/threadpool.hpp
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
@@ -100,7 +100,7 @@ obj/secure_sockets_0$(obj_ext): Polyweb/Polynet/secure_sockets.cpp .polybuild.mk
 	@"$(cpp_compiler)" $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-objects :=  obj/util_0$(obj_ext) obj/main_0$(obj_ext) obj/client_0$(obj_ext) obj/server_0$(obj_ext) obj/websocket_0$(obj_ext) obj/string_0$(obj_ext) obj/polyweb_0$(obj_ext) obj/polynet_0$(obj_ext) obj/secure_sockets_0$(obj_ext)
+objects :=  obj/main_0$(obj_ext) obj/util_0$(obj_ext) obj/client_0$(obj_ext) obj/polyweb_0$(obj_ext) obj/server_0$(obj_ext) obj/string_0$(obj_ext) obj/websocket_0$(obj_ext) obj/polynet_0$(obj_ext) obj/secure_sockets_0$(obj_ext)
 tenebra-gtk$(out_ext): .polybuild.mk $(objects) $(static_libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Building $@..."
 	@"$(cpp_compiler)" $(objects) $(static_libraries) $(cpp_compilation_flags) $(out_path_flag)$@ $(link_flag) $(link_time_flags) $(libraries)
