@@ -785,7 +785,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    pw::threadpool.resize(0);
+    pw::thread_pool.resize(0);
 #ifdef _WIN32
     if (AttachConsole(ATTACH_PARENT_PROCESS)) {
         FILE* fp;
