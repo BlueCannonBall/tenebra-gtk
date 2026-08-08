@@ -196,9 +196,15 @@ public:
                 {"view_only", (bool) gtk_check_button_get_active(GTK_CHECK_BUTTON(view_only_check_button))},
             };
 
-            pw::HTTPResponse resp;
-            if (pw::fetch("POST", "https://localhost:" + std::to_string((unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.verify_mode = SSL_VERIFY_NONE}) == PN_ERROR) {
-                show_toast("Failed to create one-time link key: " + pw::universal_strerror());
+            pn::TLSContext tls_context;
+            if (pn::Status result = tls_context.init_client(SSL_VERIFY_NONE); !result) {
+                show_toast("Failed to create one-time link key: " + result.error().message());
+                return;
+            }
+
+            pw::Response resp;
+            if (pn::Status result = pw::fetch("POST", "https://localhost:" + std::to_string((unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
+                show_toast("Failed to create one-time link key: " + result.error().message());
                 return;
             } else if (resp.status_code != 200) {
                 show_toast("Failed to create one-time link key: Response has status code " + std::to_string(resp.status_code));
@@ -820,10 +826,15 @@ int main(int argc, char* argv[]) {
     });
 #endif
 
+    (void) pn::init();
+
     MainWindow window;
     glib::Object<AdwApplication> app = adw_application_new("org.telewindow.Tenebra", G_APPLICATION_DEFAULT_FLAGS);
     app.connect_signal("activate", std::bind(&MainWindow::handle_activate, &window, std::placeholders::_1));
-    return g_application_run(G_APPLICATION(app.get()), argc, argv);
+    int ret = g_application_run(G_APPLICATION(app.get()), argc, argv);
+
+    (void) pn::quit();
+    return ret;
 }
 
 #ifdef _WIN32
