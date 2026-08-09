@@ -214,7 +214,7 @@ public:
             }
 
             pw::Response resp;
-            if (pn::Status result = pw::fetch("POST", "https://localhost:" + std::to_string((unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
+            if (pn::Status result = pw::fetch("POST", "https://127.0.0.1:" + std::to_string((unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry))) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
                 show_toast("Failed to create one-time link key: " + result.error().message());
                 return;
             } else if (resp.status_code != 200) {
