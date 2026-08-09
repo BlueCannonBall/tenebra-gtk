@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <utility>
+#include <vector>
 #ifdef _WIN32
     #include <FL/platform.H>
     #include <ios>
@@ -123,15 +125,44 @@ protected:
         group->gap(6);
         auto label = new Label(0, 0, text);
         group->fixed(label, label_width);
+        page->fixed(group, row_height);
+        page_items.emplace_back(group, row_height);
         return group;
     }
 
+    // Blank space between groups of related settings
+    void spacer() {
+        auto box = new Fl_Box(0, 0, 0, 0);
+        box->box(FL_NO_BOX);
+        page->fixed(box, group_gap);
+        page_items.emplace_back(box, group_gap);
+    }
+
 public:
-    static constexpr int label_width = 190;
-    static constexpr int row_height = 30;
+    static constexpr int row_height = 28;
+    static constexpr int group_gap = 12;   // extra space between groups of settings
+    int label_width = 0;                   // widest label, measured at construction
+    std::vector<std::pair<Fl_Widget*, int>> page_items; // child -> its fixed height
+
+    // The label column is only as wide as it needs to be. Measuring rather than
+    // hardcoding keeps the form tight at any font size or scaling factor
+    void measure_labels(std::initializer_list<const char*> labels) {
+        fl_font(FL_HELVETICA, FL_NORMAL_SIZE);
+        for (const char* text : labels) {
+            int width = 0, height = 0;
+            fl_measure(text, width, height);
+            if (width > label_width) label_width = width;
+        }
+        label_width += 8;
+    }
 
     MainWindow(int width, int height):
         Fl_Double_Window(width, height, "Tenebra") {
+        measure_labels({"Password: ", "Port: ", "Target bitrate (kbps): ", "Monitor index: ",
+                        "Screen capture API: ", "Quality vs. speed: ", "Start x: ", "Start y: ",
+                        "End x: ", "End y: ", "VBV buffer capacity (ms): ", "TLS certificate: ",
+                        "Private key: "});
+
         auto root = new Fl_Flex(10, 10, width - 20, height - 20, Fl_Flex::COLUMN);
         root->gap(10);
 
@@ -199,16 +230,7 @@ public:
             r->fixed(port_spinner, 110);
             r->end();
         }
-        {
-            auto r = row("Target bitrate (kbps): ");
-            target_bitrate_spinner = new Fl_Spinner(0, 0, 0, 0);
-            target_bitrate_spinner->type(FL_INT_INPUT);
-            target_bitrate_spinner->range(50, 12000);
-            target_bitrate_spinner->value(4000);
-            target_bitrate_spinner->callback(handle_change, this);
-            r->fixed(target_bitrate_spinner, 110);
-            r->end();
-        }
+        spacer();
         {
             auto r = row("Monitor index: ");
             windows_monitor_index_spinner = new Fl_Spinner(0, 0, 0, 0);
@@ -232,17 +254,6 @@ public:
             r->fixed(windows_capture_api_choice, 140);
             r->end();
             windows_capture_api_row = r;
-        }
-        {
-            auto r = row("Quality vs. speed: ");
-            windows_quality_vs_speed_slider = new Fl_Hor_Slider(0, 0, 0, 0);
-            windows_quality_vs_speed_slider->range(0, 100);
-            windows_quality_vs_speed_slider->step(1);
-            windows_quality_vs_speed_slider->value(50);
-            windows_quality_vs_speed_slider->tooltip("0 = high speed and low quality, 100 = high quality and low speed");
-            windows_quality_vs_speed_slider->callback(handle_change, this);
-            r->end();
-            windows_quality_vs_speed_row = r;
         }
         {
             auto r = row("Start x: ");
@@ -314,6 +325,17 @@ public:
             r->fixed(endy_check_button, 70);
             r->end();
         }
+        spacer();
+        {
+            auto r = row("Target bitrate (kbps): ");
+            target_bitrate_spinner = new Fl_Spinner(0, 0, 0, 0);
+            target_bitrate_spinner->type(FL_INT_INPUT);
+            target_bitrate_spinner->range(50, 12000);
+            target_bitrate_spinner->value(4000);
+            target_bitrate_spinner->callback(handle_change, this);
+            r->fixed(target_bitrate_spinner, 110);
+            r->end();
+        }
         {
             auto r = row("VBV buffer capacity (ms): ");
             vbv_buf_capacity_spinner = new Fl_Spinner(0, 0, 0, 0);
@@ -325,6 +347,18 @@ public:
             r->fixed(vbv_buf_capacity_spinner, 110);
             r->end();
         }
+        {
+            auto r = row("Quality vs. speed: ");
+            windows_quality_vs_speed_slider = new Fl_Hor_Slider(0, 0, 0, 0);
+            windows_quality_vs_speed_slider->range(0, 100);
+            windows_quality_vs_speed_slider->step(1);
+            windows_quality_vs_speed_slider->value(50);
+            windows_quality_vs_speed_slider->tooltip("0 = high speed and low quality, 100 = high quality and low speed");
+            windows_quality_vs_speed_slider->callback(handle_change, this);
+            r->end();
+            windows_quality_vs_speed_row = r;
+        }
+        spacer();
 
         auto check_row = [&](Fl_Check_Button*& out, const char* text, const char* tip, bool on) {
             auto r = new Fl_Flex(Fl_Flex::ROW);
@@ -335,6 +369,8 @@ public:
             if (tip) out->tooltip(tip);
             out->callback(handle_change, this);
             r->end();
+            page->fixed(r, row_height);
+            page_items.emplace_back(r, row_height);
             return r;
         };
 
@@ -364,6 +400,7 @@ public:
             window->set_dirty(true);
         });
 
+        spacer();
         {
             auto r = row("TLS certificate: ");
             cert_input = new Fl_Input(0, 0, 0, 0);
@@ -444,11 +481,15 @@ public:
     // Fl_Flex has no natural height, so the scrolled page is sized from its visible
     // rows. Hidden rows take no space in Fl_Flex, so they must not be counted here
     void layout_page() {
-        int visible_rows = 0;
-        for (int i = 0; i < page->children(); i++) {
-            if (page->child(i)->visible()) visible_rows++;
+        int total = 0, visible = 0;
+        for (const auto& [widget, height] : page_items) {
+            if (widget->visible()) {
+                total += height;
+                visible++;
+            }
         }
-        page->size(page->w(), visible_rows * row_height + (visible_rows - 1) * page->gap());
+        if (visible) total += (visible - 1) * page->gap();
+        page->size(page->w(), total);
         page->layout();
     }
 
@@ -517,10 +558,13 @@ public:
     void handle_share() {
         std::string address = get_common_name_from_cert(cert_input->value()) + ':' + std::to_string((unsigned short) port_spinner->value());
 
-        auto dialog = new Fl_Double_Window(360, 150, "Share");
+        // 3 rows plus 2 gaps plus even margins -- sized so there is no dead space
+        constexpr int margin = 12, gap = 10;
+        constexpr int rows = 28 + 24 + 30 + 2 * gap;
+        auto dialog = new Fl_Double_Window(380, rows + 2 * margin, "Share");
         dialog->set_modal();
-        auto flex = new Fl_Flex(10, 10, 340, 130, Fl_Flex::COLUMN);
-        flex->gap(8);
+        auto flex = new Fl_Flex(margin, margin, 380 - 2 * margin, rows, Fl_Flex::COLUMN);
+        flex->gap(gap);
 
         auto address_row = new Fl_Flex(Fl_Flex::ROW);
         address_row->gap(6);
@@ -892,7 +936,7 @@ int main(int argc, char* argv[]) {
     configure_fltk_colors();
     fl_message_hotspot(0);
 
-    auto window = new MainWindow(680, 700);
+    auto window = new MainWindow(680, 720);
     window->size_range(560, 400);
     window->show();
 #ifdef _WIN32
