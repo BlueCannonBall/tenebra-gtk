@@ -107,6 +107,7 @@ protected:
     Fl_Group* windows_capture_api_row;
     Fl_Group* vapostproc_row;
     Fl_Flex* page;
+    Fl_Flex* status_row;
 
     bool new_user = false;
     bool dirty = true;
@@ -135,7 +136,7 @@ public:
         root->gap(10);
 
         // ---- status strip: what the app is doing, and the controls that change it ----
-        auto status_row = new Fl_Flex(Fl_Flex::ROW);
+        status_row = new Fl_Flex(Fl_Flex::ROW);
         status_row->gap(6);
         status_label = new Fl_Box(0, 0, 0, 0, "");
         status_label->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
@@ -448,6 +449,7 @@ public:
             if (page->child(i)->visible()) visible_rows++;
         }
         page->size(page->w(), visible_rows * row_height + (visible_rows - 1) * page->gap());
+        page->layout();
     }
 
     void set_dirty(bool value) {
@@ -506,6 +508,9 @@ public:
             stop_button->show();
             restart_button->show();
         }
+        // Fl_Flex does not re-flow when a child's visibility changes, so the row
+        // would keep the geometry it had when the other buttons were shown
+        status_row->layout();
         redraw();
     }
 
