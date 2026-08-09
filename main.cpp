@@ -29,37 +29,39 @@ using nlohmann::json;
 
 class MainWindow {
 protected:
+    // All null until handle_activate builds them, so that a signal handler firing
+    // mid-construction hits a null check rather than an indeterminate pointer
     GtkWidget* window = nullptr;
-    GtkWidget* toast_overlay;
+    GtkWidget* toast_overlay = nullptr;
 
-    GtkWidget* button_stack;
-    GtkWidget* start_button;
-    GtkWidget* running_box;
-    GtkWidget* save_button;
-    GtkWidget* share_button;
+    GtkWidget* button_stack = nullptr;
+    GtkWidget* start_button = nullptr;
+    GtkWidget* running_box = nullptr;
+    GtkWidget* save_button = nullptr;
+    GtkWidget* share_button = nullptr;
 
-    GtkWidget* password_entry;
-    GtkWidget* port_entry;
-    GtkWidget* target_bitrate_entry;
-    GtkWidget* windows_monitor_index_entry;
-    GtkWidget* windows_capture_api_combo_box;
-    GtkWidget* windows_quality_vs_speed_row;
-    GtkWidget* windows_quality_vs_speed_scale;
-    GtkWidget* startx_entry;
-    GtkWidget* starty_entry;
-    GtkWidget* endx_entry;
-    GtkWidget* endx_check_button;
-    GtkWidget* endy_entry;
-    GtkWidget* endy_check_button;
-    GtkWidget* vbv_buf_capacity_entry;
-    GtkWidget* tcp_upnp_switch;
-    GtkWidget* sound_forwarding_switch;
-    GtkWidget* hwencode_switch;
-    GtkWidget* vapostproc_switch;
-    GtkWidget* color_downsampling_switch;
-    GtkWidget* bwe_switch;
-    GtkWidget* cert_entry;
-    GtkWidget* key_entry;
+    GtkWidget* password_entry = nullptr;
+    GtkWidget* port_entry = nullptr;
+    GtkWidget* target_bitrate_entry = nullptr;
+    GtkWidget* windows_monitor_index_entry = nullptr;
+    GtkWidget* windows_capture_api_combo_box = nullptr;
+    GtkWidget* windows_quality_vs_speed_row = nullptr;
+    GtkWidget* windows_quality_vs_speed_scale = nullptr;
+    GtkWidget* startx_entry = nullptr;
+    GtkWidget* starty_entry = nullptr;
+    GtkWidget* endx_entry = nullptr;
+    GtkWidget* endx_check_button = nullptr;
+    GtkWidget* endy_entry = nullptr;
+    GtkWidget* endy_check_button = nullptr;
+    GtkWidget* vbv_buf_capacity_entry = nullptr;
+    GtkWidget* tcp_upnp_switch = nullptr;
+    GtkWidget* sound_forwarding_switch = nullptr;
+    GtkWidget* hwencode_switch = nullptr;
+    GtkWidget* vapostproc_switch = nullptr;
+    GtkWidget* color_downsampling_switch = nullptr;
+    GtkWidget* bwe_switch = nullptr;
+    GtkWidget* cert_entry = nullptr;
+    GtkWidget* key_entry = nullptr;
 
     bool new_user = false;
     bool dirty = true;
@@ -235,95 +237,77 @@ public:
         toast_overlay = adw_toast_overlay_new();
         gtk_window_set_child(GTK_WINDOW(window), toast_overlay);
 
-        GtkWidget* scrolled_window = gtk_scrolled_window_new();
-        adw_toast_overlay_set_child(ADW_TOAST_OVERLAY(toast_overlay), scrolled_window);
+        // AdwPreferencesPage supplies its own scrolling, clamping and margins
+        GtkWidget* page = adw_preferences_page_new();
+        adw_toast_overlay_set_child(ADW_TOAST_OVERLAY(toast_overlay), page);
 
-        GtkWidget* viewport = gtk_viewport_new(
-            gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(scrolled_window)),
-            gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(scrolled_window)));
-        gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), viewport);
+        auto add_group = [page](const char* title) {
+            AdwPreferencesGroup* group = ADW_PREFERENCES_GROUP(adw_preferences_group_new());
+            adw_preferences_group_set_title(group, title);
+            adw_preferences_page_add(ADW_PREFERENCES_PAGE(page), group);
+            return group;
+        };
 
-        GtkWidget* clamp = adw_clamp_new();
-        adw_clamp_set_unit(ADW_CLAMP(clamp), ADW_LENGTH_UNIT_PX);
-        adw_clamp_set_maximum_size(ADW_CLAMP(clamp), 600);
-        gtk_viewport_set_child(GTK_VIEWPORT(viewport), clamp);
-
-        GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 24);
-        gtk_widget_set_margin_top(box, 24);
-        gtk_widget_set_margin_bottom(box, 24);
-        gtk_widget_set_margin_start(box, 12);
-        gtk_widget_set_margin_end(box, 12);
-        adw_clamp_set_child(ADW_CLAMP(clamp), box);
-
-        GtkWidget* list_box = gtk_list_box_new();
-        gtk_list_box_set_selection_mode(GTK_LIST_BOX(list_box), GTK_SELECTION_NONE);
-        gtk_widget_add_css_class(list_box, "boxed-list");
-        gtk_box_append(GTK_BOX(box), list_box);
+        // Groups appear in the order they are added to the page, so rows below may be
+        // created in whatever order their signal handlers require
+        AdwPreferencesGroup* connection_group = add_group("Connection");
+        AdwPreferencesGroup* capture_group = add_group("Screen Capture");
+        AdwPreferencesGroup* video_group = add_group("Video Encoding");
+        AdwPreferencesGroup* audio_group = add_group("Audio");
+        AdwPreferencesGroup* network_group = add_group("Network");
+        AdwPreferencesGroup* security_group = add_group("Security");
+        adw_preferences_group_set_description(security_group, "Both files must be PEM-encoded, and the certificate should include any intermediates");
 
         password_entry = adw_password_entry_row_new();
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(password_entry), "Password");
         glib::connect_signal<GParamSpec*>(password_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), password_entry, -1);
+        adw_preferences_group_add(connection_group, password_entry);
 
         port_entry = adw_spin_row_new_with_range(0., 65535., 1.);
         adw_preferences_row_set_title(ADW_PREFERENCES_ROW(port_entry), "Port");
         adw_spin_row_set_value(ADW_SPIN_ROW(port_entry), 8080);
         glib::connect_signal<GParamSpec*>(port_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), port_entry, -1);
+        adw_preferences_group_add(connection_group, port_entry);
 
         target_bitrate_entry = adw_spin_row_new_with_range(50., 12000., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(target_bitrate_entry), "Target bitrate");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(target_bitrate_entry), "Target Bitrate (kbps)");
         adw_spin_row_set_value(ADW_SPIN_ROW(target_bitrate_entry), 4000);
         glib::connect_signal<GParamSpec*>(target_bitrate_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), target_bitrate_entry, -1);
+        adw_preferences_group_add(video_group, target_bitrate_entry);
 
         windows_monitor_index_entry = adw_spin_row_new_with_range(-1., 65535., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_monitor_index_entry), "Monitor index");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_monitor_index_entry), "Monitor Index");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_monitor_index_entry), "The index of the monitor to capture (-1 = primary monitor)");
         adw_spin_row_set_value(ADW_SPIN_ROW(windows_monitor_index_entry), -1.);
         glib::connect_signal<GParamSpec*>(windows_monitor_index_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_monitor_index_entry, -1);
+        adw_preferences_group_add(capture_group, windows_monitor_index_entry);
 
         windows_capture_api_combo_box = adw_combo_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_combo_box), "Screen capture API");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_capture_api_combo_box), "Screen Capture API");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_capture_api_combo_box), "The API to use for screen capture (DXGI is more compatible, but WGC is newer and more modern)");
         const char* capture_apis[] = {"DXGI", "WGC", nullptr};
         adw_combo_row_set_model(ADW_COMBO_ROW(windows_capture_api_combo_box), G_LIST_MODEL(gtk_string_list_new(capture_apis)));
         adw_combo_row_set_selected(ADW_COMBO_ROW(windows_capture_api_combo_box), 0);
         glib::connect_signal<GParamSpec*>(windows_capture_api_combo_box, "notify::selected", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_capture_api_combo_box, -1);
-
-        windows_quality_vs_speed_row = adw_action_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_quality_vs_speed_row), "Quality vs. Speed");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_quality_vs_speed_row), "0 = high speed and low quality, 100 = high quality and low speed");
-        gtk_widget_set_sensitive(windows_quality_vs_speed_row, FALSE);
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), windows_quality_vs_speed_row, -1);
-
-        windows_quality_vs_speed_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0., 100., 1.);
-        gtk_range_set_value(GTK_RANGE(windows_quality_vs_speed_scale), 50.);
-        gtk_scale_add_mark(GTK_SCALE(windows_quality_vs_speed_scale), 50., GTK_POS_BOTTOM, nullptr);
-        gtk_scale_set_draw_value(GTK_SCALE(windows_quality_vs_speed_scale), TRUE);
-        gtk_widget_set_size_request(windows_quality_vs_speed_scale, 150, -1);
-        glib::connect_signal<GParamSpec*>(gtk_range_get_adjustment(GTK_RANGE(windows_quality_vs_speed_scale)), "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        adw_action_row_add_suffix(ADW_ACTION_ROW(windows_quality_vs_speed_row), windows_quality_vs_speed_scale);
+        adw_preferences_group_add(capture_group, windows_capture_api_combo_box);
 
         startx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start x");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to stream at");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(startx_entry), "Start X");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(startx_entry), "The x-coordinate to start streaming at");
         glib::connect_signal<GParamSpec*>(startx_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), startx_entry, -1);
+        adw_preferences_group_add(capture_group, startx_entry);
 
         starty_entry = adw_spin_row_new_with_range(0., 65535., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(starty_entry), "Start y");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(starty_entry), "The y-coordinate to stream at");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(starty_entry), "Start Y");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(starty_entry), "The y-coordinate to start streaming at");
         glib::connect_signal<GParamSpec*>(starty_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), starty_entry, -1);
+        adw_preferences_group_add(capture_group, starty_entry);
 
         endx_entry = adw_spin_row_new_with_range(0., 65535., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endx_entry), "End x");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endx_entry), "End X");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(endx_entry), "The x-coordinate to stop streaming at");
         glib::connect_signal<GParamSpec*>(endx_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), endx_entry, -1);
+        adw_preferences_group_add(capture_group, endx_entry);
 
         endx_check_button = gtk_check_button_new();
         gtk_widget_set_valign(endx_check_button, GTK_ALIGN_CENTER);
@@ -331,10 +315,10 @@ public:
         adw_action_row_add_prefix(ADW_ACTION_ROW(endx_entry), endx_check_button);
 
         endy_entry = adw_spin_row_new_with_range(0., 65535., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endy_entry), "End y");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(endy_entry), "End Y");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(endy_entry), "The y-coordinate to stop streaming at");
         glib::connect_signal<GParamSpec*>(endy_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), endy_entry, -1);
+        adw_preferences_group_add(capture_group, endy_entry);
 
         endy_check_button = gtk_check_button_new();
         gtk_widget_set_valign(endy_check_button, GTK_ALIGN_CENTER);
@@ -342,29 +326,29 @@ public:
         adw_action_row_add_prefix(ADW_ACTION_ROW(endy_entry), endy_check_button);
 
         vbv_buf_capacity_entry = adw_spin_row_new_with_range(1., 1000., 1.);
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV buffer capacity (ms)");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vbv_buf_capacity_entry), "VBV Buffer Capacity (ms)");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(vbv_buf_capacity_entry), "The size of the video buffering verifier (VBV) buffer, which controls how smoothly bitrate is distributed to prevent playback stuttering or quality drops");
         adw_spin_row_set_value(ADW_SPIN_ROW(vbv_buf_capacity_entry), 120);
         glib::connect_signal<GParamSpec*>(vbv_buf_capacity_entry, "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), vbv_buf_capacity_entry, -1);
+        adw_preferences_group_add(video_group, vbv_buf_capacity_entry);
 
         tcp_upnp_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "Automatic ICE-TCP UPnP forwarding");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(tcp_upnp_switch), "Automatically port forwards TCP ports for ICE-TCP");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(tcp_upnp_switch), "Automatic ICE-TCP UPnP Forwarding");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(tcp_upnp_switch), "Automatically forwards TCP ports for ICE-TCP");
         adw_switch_row_set_active(ADW_SWITCH_ROW(tcp_upnp_switch), TRUE);
         glib::connect_signal<GParamSpec*>(tcp_upnp_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), tcp_upnp_switch, -1);
+        adw_preferences_group_add(network_group, tcp_upnp_switch);
 
         sound_forwarding_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(sound_forwarding_switch), "Sound forwarding");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(sound_forwarding_switch), "Sound Forwarding");
 #ifndef __APPLE__
         adw_switch_row_set_active(ADW_SWITCH_ROW(sound_forwarding_switch), TRUE);
 #endif
         glib::connect_signal<GParamSpec*>(sound_forwarding_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), sound_forwarding_switch, -1);
+        adw_preferences_group_add(audio_group, sound_forwarding_switch);
 
         hwencode_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hwencode_switch), "Hardware-accelerated video encoding");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hwencode_switch), "Hardware-Accelerated Video Encoding");
 #ifdef _WIN32
         adw_action_row_set_subtitle(ADW_ACTION_ROW(hwencode_switch), "Uses Microsoft Media Foundation for video encoding and conversion");
 #elif defined(__APPLE__)
@@ -399,33 +383,50 @@ public:
                 gtk_widget_set_sensitive(color_downsampling_switch, TRUE);
             }
         });
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), hwencode_switch, -1);
+        adw_preferences_group_add(video_group, hwencode_switch);
+
+        // Created after hwencode_switch so that it lands directly beneath the toggle that
+        // controls its sensitivity. Safe because nothing activates that toggle until
+        // refresh() runs, by which point every row exists
+        windows_quality_vs_speed_row = adw_action_row_new();
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(windows_quality_vs_speed_row), "Quality vs. Speed");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(windows_quality_vs_speed_row), "0 = high speed and low quality, 100 = high quality and low speed");
+        gtk_widget_set_sensitive(windows_quality_vs_speed_row, FALSE);
+        adw_preferences_group_add(video_group, windows_quality_vs_speed_row);
+
+        windows_quality_vs_speed_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0., 100., 1.);
+        gtk_range_set_value(GTK_RANGE(windows_quality_vs_speed_scale), 50.);
+        gtk_scale_add_mark(GTK_SCALE(windows_quality_vs_speed_scale), 50., GTK_POS_BOTTOM, nullptr);
+        gtk_scale_set_draw_value(GTK_SCALE(windows_quality_vs_speed_scale), TRUE);
+        gtk_widget_set_size_request(windows_quality_vs_speed_scale, 150, -1);
+        glib::connect_signal<GParamSpec*>(gtk_range_get_adjustment(GTK_RANGE(windows_quality_vs_speed_scale)), "notify::value", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
+        adw_action_row_add_suffix(ADW_ACTION_ROW(windows_quality_vs_speed_row), windows_quality_vs_speed_scale);
 
         vapostproc_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vapostproc_switch), "VA-API video conversion");
-        adw_action_row_set_subtitle(ADW_ACTION_ROW(vapostproc_switch), "Enables hardware accelerated video format conversion on devices with Intel or AMD GPUs");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(vapostproc_switch), "VA-API Video Conversion");
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(vapostproc_switch), "Enables hardware-accelerated video format conversion on devices with Intel or AMD GPUs");
         gtk_widget_set_sensitive(vapostproc_switch, FALSE);
         glib::connect_signal<GParamSpec*>(vapostproc_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), vapostproc_switch, -1);
+        adw_preferences_group_add(video_group, vapostproc_switch);
 
         color_downsampling_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(color_downsampling_switch), "Color channel downsampling");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(color_downsampling_switch), "Color Channel Downsampling");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(color_downsampling_switch), "Encodes frames in NV12 format");
         adw_switch_row_set_active(ADW_SWITCH_ROW(color_downsampling_switch), TRUE);
         glib::connect_signal<GParamSpec*>(color_downsampling_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), color_downsampling_switch, -1);
+        adw_preferences_group_add(video_group, color_downsampling_switch);
 
         bwe_switch = adw_switch_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bwe_switch), "Bandwidth estimation");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bwe_switch), "Bandwidth Estimation");
         adw_action_row_set_subtitle(ADW_ACTION_ROW(bwe_switch), "Adjusts media bitrate on the fly to adapt to changing network conditions");
         adw_switch_row_set_active(ADW_SWITCH_ROW(bwe_switch), TRUE);
         glib::connect_signal<GParamSpec*>(bwe_switch, "notify::active", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), bwe_switch, -1);
+        adw_preferences_group_add(network_group, bwe_switch);
 
         cert_entry = adw_entry_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(cert_entry), "Certificate chain file");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(cert_entry), "TLS Certificate");
         glib::connect_signal<GParamSpec*>(cert_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), cert_entry, -1);
+        adw_preferences_group_add(security_group, cert_entry);
 
         GtkWidget* choose_cert_button = gtk_button_new_from_icon_name("document-open-symbolic");
         gtk_widget_set_tooltip_text(choose_cert_button, "Choose File");
@@ -435,9 +436,9 @@ public:
         adw_entry_row_add_suffix(ADW_ENTRY_ROW(cert_entry), choose_cert_button);
 
         key_entry = adw_entry_row_new();
-        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(key_entry), "Private key file");
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(key_entry), "Private Key");
         glib::connect_signal<GParamSpec*>(key_entry, "notify::text", std::bind(&MainWindow::handle_change, this, std::placeholders::_1, std::placeholders::_2));
-        gtk_list_box_insert(GTK_LIST_BOX(list_box), key_entry, -1);
+        adw_preferences_group_add(security_group, key_entry);
 
         GtkWidget* choose_key_button = gtk_button_new_from_icon_name("document-open-symbolic");
         gtk_widget_set_tooltip_text(choose_key_button, "Choose File");
@@ -453,6 +454,7 @@ public:
         gtk_widget_set_visible(windows_capture_api_combo_box, FALSE);
         gtk_widget_set_visible(windows_quality_vs_speed_row, FALSE);
         gtk_widget_set_visible(sound_forwarding_switch, FALSE);
+        gtk_widget_set_visible(GTK_WIDGET(audio_group), FALSE); // Otherwise its title would sit above nothing
         gtk_widget_set_visible(vapostproc_switch, FALSE);
 #else
         gtk_widget_set_visible(windows_monitor_index_entry, FALSE);
