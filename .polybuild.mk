@@ -59,11 +59,11 @@ prefix := "/usr/local/bin"
 ifeq ($(OS),Windows_NT)
 	c_compiler := "$(CC)"
 	cpp_compiler := "$(CXX)"
-	c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_static_flag)
-	cpp_compilation_flags := /W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I"fltk" /I"fltk/build" /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_static_flag)
+	c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_dynamic_flag)
+	cpp_compilation_flags := /W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I"fltk" /I"fltk/build" /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_dynamic_flag)
 	link_time_flags := /SUBSYSTEM:WINDOWS $(library_path_flag)"\"$(OPENSSL_ROOT_DIR)\"/lib"
-	libraries := $(library_flag)"libssl.lib" $(library_flag)"libcrypto.lib" $(library_flag)"ws2_32.lib" $(library_flag)"crypt32.lib" $(library_flag)"advapi32.lib" $(library_flag)"shell32.lib" $(library_flag)"dwmapi.lib" $(library_flag)"gdiplus.lib" $(library_flag)"ole32.lib" $(library_flag)"comdlg32.lib" $(library_flag)"winspool.lib" $(library_flag)"user32.lib" $(library_flag)"kernel32.lib" $(library_flag)"gdi32.lib" $(library_flag)"comctl32.lib" $(library_flag)"uuid.lib"
-	static_libraries := fltk/build/lib/fltk.lib
+	libraries := $(library_flag)"libssl.lib" $(library_flag)"libcrypto.lib" $(library_flag)"ws2_32.lib" $(library_flag)"crypt32.lib" $(library_flag)"advapi32.lib" $(library_flag)"shell32.lib" $(library_flag)"dwmapi.lib" $(library_flag)"gdiplus.lib" $(library_flag)"ole32.lib" $(library_flag)"comdlg32.lib" $(library_flag)"winspool.lib" $(library_flag)"user32.lib" $(library_flag)"kernel32.lib" $(library_flag)"gdi32.lib" $(library_flag)"comctl32.lib"
+	static_libraries := fltk/build/lib/fltk.lib fltk/build/lib/fltk_images.lib fltk/build/lib/fltk_png.lib fltk/build/lib/fltk_z.lib
 	prefix := "C:\\tenebra-gtk\\bin"
 endif
 

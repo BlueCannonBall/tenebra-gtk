@@ -13,7 +13,7 @@ pkg-config-libraries = ["gio-2.0"]
 preludes = [
     """ \
         cd fltk && \
-        cmake . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DFLTK_BACKEND_WAYLAND=OFF -DFLTK_BUILD_TEST=OFF -DFLTK_BUILD_FLUID=OFF -DFLTK_BUILD_EXAMPLES=OFF -DFLTK_MSVC_RUNTIME_DLL=OFF && \
+        cmake . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DFLTK_BACKEND_WAYLAND=OFF -DFLTK_BUILD_TEST=OFF -DFLTK_BUILD_FLUID=OFF -DFLTK_BUILD_EXAMPLES=OFF && \
         "$(MAKE)" -C build \
     """,
 ]
@@ -32,10 +32,12 @@ libraries = [
     "libssl.lib", "libcrypto.lib",
     "ws2_32.lib", "crypt32.lib", "advapi32.lib", "shell32.lib",
     "dwmapi.lib", "gdiplus.lib", "ole32.lib", "comdlg32.lib",
-    "winspool.lib", "user32.lib", "kernel32.lib", "gdi32.lib", "comctl32.lib", "uuid.lib",
+    "winspool.lib", "user32.lib", "kernel32.lib", "gdi32.lib", "comctl32.lib",
 ]
 static-libraries = [
     "fltk/build/lib/fltk.lib",
+    "fltk/build/lib/fltk_images.lib",
+    "fltk/build/lib/fltk_png.lib",
+    "fltk/build/lib/fltk_z.lib",
 ]
 pkg-config-libraries = []
-static = true
