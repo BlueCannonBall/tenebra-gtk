@@ -75,6 +75,7 @@ static Fl_Button* danger_button(Fl_Button* button) {
 class MainWindow : public Fl_Double_Window {
 protected:
     Fl_Box* status_label;
+    Fl_Box* message_label;
     Fl_Button* start_button;
     Fl_Button* stop_button;
     Fl_Button* restart_button;
@@ -166,6 +167,7 @@ protected:
 public:
     static constexpr int row_height = 28;
     static constexpr int group_gap = 12;   // extra space between groups of settings
+    static constexpr int button_height = 30;
     int label_width = 0;                   // widest label, measured at construction
     std::vector<std::pair<Fl_Widget*, int>> page_items; // child -> its fixed height
 
@@ -207,7 +209,7 @@ public:
         restart_button = new Fl_Button(0, 0, 80, 0, "Restart");
         FL_INLINE_CALLBACK_1(restart_button, MainWindow*, window, this, {
             if (!window->stop(false) && !window->start()) {
-                fl_message("Tenebra has been restarted");
+                window->show_message("Tenebra has been restarted");
             }
             window->refresh_status();
         });
@@ -228,7 +230,7 @@ public:
         status_row->fixed(stop_button, stop_button->w());
 
         status_row->end();
-        root->fixed(status_row, 34);
+        root->fixed(status_row, button_height);
 
         // ---- settings ----
         auto scroll = new Fl_Scroll(0, 0, 0, 0);
@@ -464,19 +466,22 @@ public:
         // ---- commit actions ----
         auto button_row = new Fl_Flex(Fl_Flex::ROW);
         button_row->gap(6);
+        message_label = new Fl_Box(0, 0, 0, 0, "");
+        // FL_ALIGN_CLIP, or a long message draws straight over the buttons
+        message_label->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE | FL_ALIGN_CLIP);
         auto refresh_button = new Fl_Button(0, 0, 90, 0, "Revert");
         FL_INLINE_CALLBACK_1(refresh_button, MainWindow*, window, this, {
             window->refresh(true);
         });
         button_row->fixed(refresh_button, refresh_button->w());
-        new Fl_Box(0, 0, 0, 0); // spacer
         save_button = accent_button(new Fl_Button(0, 0, 90, 0, "Save"));
         FL_INLINE_CALLBACK_1(save_button, MainWindow*, window, this, {
             window->save();
         });
         button_row->fixed(save_button, save_button->w());
+        button_row->fixed(save_button, save_button->w());
         button_row->end();
-        root->fixed(button_row, 30);
+        root->fixed(button_row, button_height);
 
         root->end();
         resizable(root);
@@ -518,6 +523,21 @@ public:
         if (visible) total += (visible - 1) * page->gap();
         page->size(page->w(), total);
         page->layout();
+    }
+
+    // Non-critical feedback goes to a status line rather than a dialog you have to
+    // dismiss. Errors still use fl_alert, since those want acknowledging
+    void show_message(const std::string& text) {
+        message_label->copy_label(text.c_str());
+        Fl::remove_timeout(clear_message, this);
+        Fl::add_timeout(6.0, clear_message, this);
+        message_label->redraw();
+    }
+
+    static void clear_message(void* data) {
+        auto window = (MainWindow*) data;
+        window->message_label->copy_label("");
+        window->message_label->redraw();
     }
 
     void set_dirty(bool value) {
@@ -657,7 +677,7 @@ public:
         };
         std::string url = url_info.build();
         Fl::copy(url.c_str(), url.size(), 1);
-        fl_message("Copied one-time access link to clipboard");
+        show_message("Copied one-time access link to clipboard");
     }
 
     void refresh(bool confirm = false) {
@@ -859,7 +879,7 @@ public:
             }
 #endif
         } else if (show_not_running_message) {
-            fl_message("Tenebra wasn't running in the first place \xf0\x9f\xab\xa4");
+            show_message("Tenebra wasn't running in the first place \xf0\x9f\xab\xa4");
         }
         return 0;
     }
@@ -902,7 +922,7 @@ public:
                 if (config_file << config << std::flush) {
                     set_dirty(false);
                     if (show_success_message) {
-                        fl_message("Settings saved to %s", (config_path / "config.toml").string().c_str());
+                        show_message("Settings saved");
                     }
                     return 0;
                 }
