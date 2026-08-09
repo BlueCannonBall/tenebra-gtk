@@ -110,6 +110,7 @@ protected:
     Fl_Group* windows_capture_api_row;
     Fl_Group* vapostproc_row;
     Fl_Flex* page;
+    Fl_Scroll* scroll;
     Fl_Flex* status_row;
 
     bool new_user = false;
@@ -233,7 +234,7 @@ public:
         root->fixed(status_row, button_height);
 
         // ---- settings ----
-        auto scroll = new Fl_Scroll(0, 0, 0, 0);
+        scroll = new Fl_Scroll(0, 0, 0, 0);
         scroll->type(Fl_Scroll::VERTICAL);
         scroll->box(FL_NO_BOX);
 
@@ -505,6 +506,10 @@ public:
         windows_quality_vs_speed_row->hide();
 #endif
 
+        // Give root a chance to size its children first: the window is created at its
+        // final size, so resize() never fires and the scroll area would otherwise
+        // still be zero-width when layout_page() runs
+        root->layout();
         layout_page();
         refresh();
         Fl::add_timeout(2.0, poll_status, this);
@@ -521,7 +526,17 @@ public:
             }
         }
         if (visible) total += (visible - 1) * page->gap();
-        page->size(page->w(), total);
+
+        // Match the scroll area's width so the left and right margins are equal,
+        // leaving room for the scrollbar only when there is going to be one.
+        // Fl_Scroll does not resize its child, so this has to be done by hand.
+        // resize() reaches here during construction, before the scroll area has a
+        // size, so bail out until it does rather than compute a negative width
+        if (scroll->w() <= 0 || scroll->h() <= 0) {
+            return;
+        }
+        int width = scroll->w() - (total > scroll->h() ? Fl::scrollbar_size() : 0);
+        page->size(width, total);
         page->layout();
     }
 
@@ -538,6 +553,13 @@ public:
         auto window = (MainWindow*) data;
         window->message_label->copy_label("");
         window->message_label->redraw();
+    }
+
+    // Fl_Scroll leaves its child at whatever size it was given, so the page has to be
+    // re-sized whenever the window changes
+    void resize(int X, int Y, int W, int H) override {
+        Fl_Double_Window::resize(X, Y, W, H);
+        layout_page();
     }
 
     void set_dirty(bool value) {
@@ -632,8 +654,11 @@ public:
         });
         buttons->fixed(cancel, cancel->w());
         auto copy = accent_button(new Fl_Button(0, 0, 150, 0, "Copy One-Time Link"));
-        FL_INLINE_CALLBACK_3(copy, MainWindow*, window, this, Fl_Input*, address_input, address_input, Fl_Check_Button*, view_only, view_only, {
-            window->copy_one_time_link(address_input->value(), view_only->value());
+        FL_INLINE_CALLBACK_4(copy, MainWindow*, window, this, Fl_Input*, address_input, address_input,
+                             Fl_Check_Button*, view_only, view_only, Fl_Double_Window*, dlg, dialog, {
+            if (window->copy_one_time_link(address_input->value(), view_only->value())) {
+                dlg->hide();
+            }
         });
         buttons->fixed(copy, copy->w());
         buttons->end();
@@ -646,7 +671,8 @@ public:
         dialog->show();
     }
 
-    void copy_one_time_link(const char* address, bool view_only) {
+    // Returns true when the link reached the clipboard, so the dialog can close
+    bool copy_one_time_link(const char* address, bool view_only) {
         json req_json = {
             {"password", password_input->value()},
             {"view_only", view_only},
@@ -655,16 +681,16 @@ public:
         pn::TLSContext tls_context;
         if (pn::Status result = tls_context.init_client(SSL_VERIFY_NONE); !result) {
             fl_alert("Failed to create one-time link key: %s", result.error().message().c_str());
-            return;
+            return false;
         }
 
         pw::Response resp;
         if (pn::Status result = pw::fetch("POST", "https://localhost:" + std::to_string((unsigned short) port_spinner->value()) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
             fl_alert("Failed to create one-time link key: %s", result.error().message().c_str());
-            return;
+            return false;
         } else if (resp.status_code != 200) {
             fl_alert("Failed to create one-time link key: Response has status code %d", (int) resp.status_code);
-            return;
+            return false;
         }
 
         pw::URLInfo url_info;
@@ -678,6 +704,7 @@ public:
         std::string url = url_info.build();
         Fl::copy(url.c_str(), url.size(), 1);
         show_message("Copied one-time access link to clipboard");
+        return true;
     }
 
     void refresh(bool confirm = false) {
