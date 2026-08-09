@@ -172,6 +172,7 @@ public:
     static constexpr int button_height = 30;
     static constexpr int window_margin = 10;
     static constexpr int root_gap = 10;
+    static constexpr int scrollbar_gap = 6;
     int label_width = 0;                   // widest label, measured at construction
     std::vector<std::pair<Fl_Widget*, int>> page_items; // child -> its fixed height
 
@@ -547,9 +548,20 @@ public:
         if (scroll->w() <= 0 || scroll->h() <= 0) {
             return;
         }
-        int width = scroll->w() - (total > scroll->h() ? Fl::scrollbar_size() : 0);
+        // Leave a gap beside the scrollbar when there is one, so the fields do not
+        // butt up against it
+        bool scrolling = total > scroll->h();
+        int width = scroll->w() - (scrolling ? Fl::scrollbar_size() + scrollbar_gap : 0);
         page->size(width, total);
         page->layout();
+
+        // Fl_Scroll keeps its offset when the view grows, so enlarging the window
+        // after scrolling down leaves the content pushed up with dead space below.
+        // Clamp the offset to what the content can actually scroll by
+        int max_y = std::max(0, total - scroll->h());
+        if (scroll->yposition() > max_y) {
+            scroll->scroll_to(scroll->xposition(), max_y);
+        }
     }
 
     // Non-critical feedback goes to a status line rather than a dialog you have to
