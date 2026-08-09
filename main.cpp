@@ -918,7 +918,7 @@ public:
             }
 #endif
         } else if (show_not_running_message) {
-            show_message("Tenebra wasn't running in the first place \xf0\x9f\xab\xa4");
+            show_message("Tenebra wasn't running in the first place");
         }
         return 0;
     }
