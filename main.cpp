@@ -25,6 +25,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -169,6 +170,8 @@ public:
     static constexpr int row_height = 28;
     static constexpr int group_gap = 12;   // extra space between groups of settings
     static constexpr int button_height = 30;
+    static constexpr int window_margin = 10;
+    static constexpr int root_gap = 10;
     int label_width = 0;                   // widest label, measured at construction
     std::vector<std::pair<Fl_Widget*, int>> page_items; // child -> its fixed height
 
@@ -191,8 +194,9 @@ public:
                         "End x: ", "End y: ", "VBV buffer capacity (ms): ", "TLS certificate: ",
                         "Private key: "});
 
-        auto root = new Fl_Flex(10, 10, width - 20, height - 20, Fl_Flex::COLUMN);
-        root->gap(10);
+        auto root = new Fl_Flex(window_margin, window_margin,
+                                width - 2 * window_margin, height - 2 * window_margin, Fl_Flex::COLUMN);
+        root->gap(root_gap);
 
         // ---- status strip: what the app is doing, and the controls that change it ----
         status_row = new Fl_Flex(Fl_Flex::ROW);
@@ -511,6 +515,14 @@ public:
         // still be zero-width when layout_page() runs
         root->layout();
         layout_page();
+
+        // The scroll area is root's flexible child, so any height the settings do not
+        // use collects underneath the last row and reads as a wider gap above the
+        // bottom bar than below the top one. Size the window to the content so there
+        // is none, unless that would not fit on screen, in which case it scrolls
+        int needed = page->h() + 2 * window_margin + 2 * button_height + 2 * root_gap;
+        size(w(), std::min(needed, Fl::h() - 80));
+
         refresh();
         Fl::add_timeout(2.0, poll_status, this);
     }
@@ -685,7 +697,7 @@ public:
         }
 
         pw::Response resp;
-        if (pn::Status result = pw::fetch("POST", "https://localhost:" + std::to_string((unsigned short) port_spinner->value()) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
+        if (pn::Status result = pw::fetch("POST", "https://127.0.0.1:" + std::to_string((unsigned short) port_spinner->value()) + "/create_key", resp, req_json.dump(), {{"Content-Type", "application/json"}}, {.tls_context = &tls_context}); !result) {
             fl_alert("Failed to create one-time link key: %s", result.error().message().c_str());
             return false;
         } else if (resp.status_code != 200) {
