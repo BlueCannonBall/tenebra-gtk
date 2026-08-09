@@ -86,9 +86,9 @@ public:
             return;
         }
 
-        window = gtk_application_window_new(GTK_APPLICATION(app));
+        window = adw_application_window_new(GTK_APPLICATION(app));
         gtk_window_set_title(GTK_WINDOW(window), "Tenebra");
-        gtk_window_set_default_size(GTK_WINDOW(window), 675, 600);
+        gtk_window_set_default_size(GTK_WINDOW(window), 740, 700);
 
         GSimpleAction* save_action = g_simple_action_new("save", nullptr);
         glib::connect_signal<GVariant*>(save_action, "activate", [this](GSimpleAction*, GVariant*) {
@@ -118,8 +118,14 @@ public:
             gtk_application_set_accels_for_action(GTK_APPLICATION(app), "app.refresh", accels);
         }
 
+        // The header goes inside an AdwToolbarView rather than being the window's
+        // titlebar, so it sits flush with the content and only grows a shadow once
+        // something is scrolled under it. Its default style is ADW_TOOLBAR_FLAT
+        GtkWidget* toolbar_view = adw_toolbar_view_new();
+        adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), toolbar_view);
+
         GtkWidget* header_bar = adw_header_bar_new();
-        gtk_window_set_titlebar(GTK_WINDOW(window), header_bar);
+        adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar_view), header_bar);
 
         button_stack = gtk_stack_new();
         gtk_stack_set_hhomogeneous(GTK_STACK(button_stack), FALSE);
@@ -238,7 +244,7 @@ public:
         adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), share_button);
 
         toast_overlay = adw_toast_overlay_new();
-        gtk_window_set_child(GTK_WINDOW(window), toast_overlay);
+        adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar_view), toast_overlay);
 
         // AdwPreferencesPage supplies its own scrolling, clamping and margins
         GtkWidget* page = adw_preferences_page_new();
