@@ -118,6 +118,31 @@ protected:
         ((MainWindow*) data)->set_dirty(true);
     }
 
+    // FLTK routes both the window manager's close button and the Escape key here.
+    // Escape is ignored so a stray keypress cannot throw away unsaved settings
+    static void handle_close(Fl_Widget*, void* data) {
+        if (Fl::event() == FL_SHORTCUT && Fl::event_key() == FL_Escape) {
+            return;
+        }
+
+        auto window = (MainWindow*) data;
+        if (window->dirty) {
+            switch (fl_choice("You have unsaved changes. Changes that are not saved will be permanently lost.",
+                              "Cancel", "Save", "Discard")) {
+            case 1:
+                if (window->save(false) == -1) return;
+                break;
+
+            case 2:
+                break;
+
+            default:
+                return;
+            }
+        }
+        window->hide();
+    }
+
     // Fl_Group holding a right-aligned label and one field, sized in text units so
     // that everything scales with the font rather than with hardcoded pixels
     Fl_Flex* row(const char* text) {
@@ -456,6 +481,8 @@ public:
         root->end();
         resizable(root);
         end();
+
+        callback(handle_close, this);
 
         // Settings that only apply on Windows are hidden elsewhere, matching the
         // GTK version's behaviour
