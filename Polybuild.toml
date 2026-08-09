@@ -26,7 +26,7 @@ install = "C:\\tenebra-gtk\\bin"
 # fltk-config emits a broken mix of MSVC and GCC flags on Windows, so the static
 # libraries and FLTK's own Win32 dependencies are listed explicitly instead
 [env.OS.Windows_NT.options]
-compilation-flags = "/W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I\"fltk\" /I\"fltk/build\" /I\"$(OPENSSL_ROOT_DIR)\"/include /O2"
+compilation-flags = "/W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I\"fltk/build\" /I\"$(OPENSSL_ROOT_DIR)\"/include /O2"
 link-time-flags = "/SUBSYSTEM:WINDOWS"
 libraries = [
     "libssl.lib", "libcrypto.lib",
