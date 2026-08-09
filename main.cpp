@@ -173,6 +173,8 @@ public:
     static constexpr int window_margin = 10;
     static constexpr int root_gap = 10;
     static constexpr int scrollbar_gap = 6;
+    static constexpr int min_width = 560;
+    static constexpr int min_height = 400;
     int label_width = 0;                   // widest label, measured at construction
     std::vector<std::pair<Fl_Widget*, int>> page_items; // child -> its fixed height
 
@@ -523,6 +525,11 @@ public:
         // is none, unless that would not fit on screen, in which case it scrolls
         int needed = page->h() + 2 * window_margin + 2 * button_height + 2 * root_gap;
         size(w(), std::min(needed, Fl::h() - 80));
+
+        // Height beyond the content has nothing to show, and letting the window grow
+        // past it just opens a gap under the last row, so cap it. Width stays free:
+        // extra width widens the fields, which is useful
+        size_range(min_width, min_height, 0, needed);
 
         refresh();
         Fl::add_timeout(2.0, poll_status, this);
@@ -1035,7 +1042,6 @@ int main(int argc, char* argv[]) {
     fl_message_hotspot(0);
 
     auto window = new MainWindow(680, 720);
-    window->size_range(560, 400);
     window->show();
 #ifdef _WIN32
     set_window_dark_mode(fl_win32_xid(window));
