@@ -177,11 +177,14 @@ public:
         gtk_widget_set_margin_start(share_box, 3);
         gtk_widget_set_margin_end(share_box, 3);
         gtk_box_set_spacing(GTK_BOX(share_box), 6);
-        gtk_widget_set_size_request(share_box, 225, -1);
         gtk_popover_set_child(GTK_POPOVER(share_popover), share_box);
 
         GtkWidget* address_entry = gtk_entry_new();
         gtk_entry_set_placeholder_text(GTK_ENTRY(address_entry), "Address");
+        // Sized in characters rather than pixels so the popover widens with the font.
+        // A fixed pixel width clipped the address once text was scaled past 100%.
+        // Don't set max-width-chars here: it sets the natural width, not a cap
+        gtk_editable_set_width_chars(GTK_EDITABLE(address_entry), 24);
         glib::connect_signal(address_entry, "map", [this, address_entry](GtkWidget*) {
             gtk_editable_set_text(GTK_EDITABLE(address_entry), (get_common_name_from_cert(gtk_editable_get_text(GTK_EDITABLE(cert_entry))) + ':' + std::to_string((unsigned short) adw_spin_row_get_value(ADW_SPIN_ROW(port_entry)))).c_str());
         });
