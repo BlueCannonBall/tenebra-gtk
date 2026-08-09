@@ -1,20 +1,41 @@
 [paths]
 output = "tenebra-gtk"
 source = [".", "Polyweb", "Polyweb/Polynet"]
+include = ["fltk"]
 artifact = "obj"
 install = "/usr/local/bin"
 
 [options]
-compilation-flags = "-Wall -Wno-unused-result -std=c++23 -O3"
+compilation-flags = "-Wall -Wno-unused-result -std=c++23 -Ifltk/build -O3"
+link-time-flags = "`fltk/build/fltk-config --ldstaticflags`"
 libraries = ["ssl", "crypto"]
-pkg-config-libraries = ["libadwaita-1", "gtk4"]
+pkg-config-libraries = ["gio-2.0"]
+preludes = [
+    """ \
+        cd fltk && \
+        cmake . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DFLTK_BACKEND_WAYLAND=OFF -DFLTK_BUILD_TEST=OFF -DFLTK_BUILD_FLUID=OFF -DFLTK_BUILD_EXAMPLES=OFF && \
+        "$(MAKE)" -C build \
+    """,
+]
+clean-preludes = ["rm -rf fltk/build"]
 
 [env.OS.Windows_NT.paths]
 library = ["\"$(OPENSSL_ROOT_DIR)\"/lib"]
 install = "C:\\tenebra-gtk\\bin"
 
+# fltk-config emits a broken mix of MSVC and GCC flags on Windows, so the static
+# libraries and FLTK's own Win32 dependencies are listed explicitly instead
 [env.OS.Windows_NT.options]
-compilation-flags = "/W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN= /DNOMINMAX= /I\"$(OPENSSL_ROOT_DIR)\"/include /O2"
+compilation-flags = "/W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I\"fltk\" /I\"fltk/build\" /I\"$(OPENSSL_ROOT_DIR)\"/include /O2"
 link-time-flags = "/SUBSYSTEM:WINDOWS"
-libraries = ["libssl.lib", "libcrypto.lib", "advapi32.lib", "crypt32.lib", "ws2_32.lib", "shcore.lib", "shell32.lib"]
+libraries = [
+    "libssl.lib", "libcrypto.lib",
+    "ws2_32.lib", "crypt32.lib", "advapi32.lib", "shell32.lib",
+    "dwmapi.lib", "gdiplus.lib", "ole32.lib", "comdlg32.lib",
+    "winspool.lib", "user32.lib", "kernel32.lib", "gdi32.lib", "comctl32.lib",
+]
+static-libraries = [
+    "fltk/build/lib/fltk.lib",
+]
+pkg-config-libraries = []
 static = true

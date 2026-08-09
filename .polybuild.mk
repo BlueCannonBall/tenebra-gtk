@@ -50,26 +50,33 @@ endif
 
 c_compiler := "$(CC)"
 cpp_compiler := "$(CXX)"
-c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(active_dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
-cpp_compilation_flags := -Wall -Wno-unused-result -std=c++23 -O3 $(active_debug_compilation_flag) $(active_dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
-link_time_flags := $(LDFLAGS) $(active_debug_link_flag)
-libraries := $(library_flag)"ssl" $(library_flag)"crypto" `pkg-config $(pkg_config_syntax) --libs "libadwaita-1" "gtk4"`
+c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags gio-2.0`
+cpp_compilation_flags := -Wall -Wno-unused-result -std=c++23 -Ifltk/build -O3 $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_dynamic_flag) `pkg-config $(pkg_config_syntax) --cflags gio-2.0`
+link_time_flags := `fltk/build/fltk-config --ldstaticflags` $(active_debug_link_flag)
+libraries := $(library_flag)"ssl" $(library_flag)"crypto" `pkg-config $(pkg_config_syntax) --libs "gio-2.0"`
 prefix := "/usr/local/bin"
 
 ifeq ($(OS),Windows_NT)
 	c_compiler := "$(CC)"
 	cpp_compiler := "$(CXX)"
-	c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(active_static_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
-	cpp_compilation_flags := /W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN= /DNOMINMAX= /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(active_debug_compilation_flag) $(active_static_flag) `pkg-config $(pkg_config_syntax) --cflags libadwaita-1 gtk4`
+	c_compilation_flags := $(CFLAGS) $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_static_flag)
+	cpp_compilation_flags := /W3 /std:c++latest /EHsc /DWIN32_LEAN_AND_MEAN /DNOMINMAX /I"fltk" /I"fltk/build" /I"$(OPENSSL_ROOT_DIR)"/include /O2 $(active_debug_compilation_flag) $(include_path_flag)fltk $(active_static_flag)
 	link_time_flags := /SUBSYSTEM:WINDOWS $(library_path_flag)"\"$(OPENSSL_ROOT_DIR)\"/lib"
-	libraries := $(library_flag)"libssl.lib" $(library_flag)"libcrypto.lib" $(library_flag)"advapi32.lib" $(library_flag)"crypt32.lib" $(library_flag)"ws2_32.lib" $(library_flag)"shcore.lib" $(library_flag)"shell32.lib" `pkg-config $(pkg_config_syntax) --libs "libadwaita-1" "gtk4"`
+	libraries := $(library_flag)"libssl.lib" $(library_flag)"libcrypto.lib" $(library_flag)"ws2_32.lib" $(library_flag)"crypt32.lib" $(library_flag)"advapi32.lib" $(library_flag)"shell32.lib" $(library_flag)"dwmapi.lib" $(library_flag)"gdiplus.lib" $(library_flag)"ole32.lib" $(library_flag)"comdlg32.lib" $(library_flag)"winspool.lib" $(library_flag)"user32.lib" $(library_flag)"kernel32.lib" $(library_flag)"gdi32.lib" $(library_flag)"comctl32.lib"
+	static_libraries := fltk/build/lib/fltk.lib
 	prefix := "C:\\tenebra-gtk\\bin"
 endif
 
 all: tenebra-gtk$(out_ext)
 .PHONY: all
 
-obj/main_0$(obj_ext): ./main.cpp .polybuild.mk ./Polyweb/polyweb.hpp ./Polyweb/Polynet/polynet.hpp ./Polyweb/Polynet/error.hpp ./Polyweb/Polynet/string.hpp ./Polyweb/Polynet/tls.hpp ./Polyweb/error.hpp ./Polyweb/string.hpp ./Polyweb/thread_pool.hpp ./glib.hpp ./json.hpp ./toml.hpp ./toml/parser.hpp ./toml/combinator.hpp ./toml/region.hpp ./toml/color.hpp ./toml/result.hpp ./toml/traits.hpp ./toml/from.hpp ./toml/into.hpp ./toml/version.hpp ./toml/utility.hpp ./toml/lexer.hpp ./toml/macros.hpp ./toml/types.hpp ./toml/comments.hpp ./toml/datetime.hpp ./toml/string.hpp ./toml/value.hpp ./toml/exception.hpp ./toml/source_location.hpp ./toml/storage.hpp ./toml/literal.hpp ./toml/serializer.hpp ./toml/get.hpp ./util.hpp
+obj/main_0$(obj_ext): ./main.cpp .polybuild.mk ./Polyweb/polyweb.hpp ./Polyweb/Polynet/polynet.hpp ./Polyweb/Polynet/error.hpp ./Polyweb/Polynet/string.hpp ./Polyweb/Polynet/tls.hpp ./Polyweb/error.hpp ./Polyweb/string.hpp ./Polyweb/thread_pool.hpp ./json.hpp ./theme.hpp ./toml.hpp ./toml/parser.hpp ./toml/combinator.hpp ./toml/region.hpp ./toml/color.hpp ./toml/result.hpp ./toml/traits.hpp ./toml/from.hpp ./toml/into.hpp ./toml/version.hpp ./toml/utility.hpp ./toml/lexer.hpp ./toml/macros.hpp ./toml/types.hpp ./toml/comments.hpp ./toml/datetime.hpp ./toml/string.hpp ./toml/value.hpp ./toml/exception.hpp ./toml/source_location.hpp ./toml/storage.hpp ./toml/literal.hpp ./toml/serializer.hpp ./toml/get.hpp ./util.hpp fltk/FL/Fl.H fltk/FL/Fl_Export.H fltk/FL/platform_types.h fltk/FL/fl_casts.H fltk/FL/Fl_Cairo.H fltk/FL/fl_utf8.h fltk/FL/fl_types.h fltk/FL/fl_attr.h fltk/FL/Enumerations.H fltk/FL/Fl_Box.H fltk/FL/Fl_Widget.H fltk/FL/Fl_Button.H fltk/FL/Fl_Check_Button.H fltk/FL/Fl_Light_Button.H fltk/FL/Fl_Choice.H fltk/FL/Fl_Menu_.H fltk/FL/Fl_Menu_Item.H fltk/FL/Fl_Image.H fltk/FL/Fl_Multi_Label.H fltk/FL/Fl_Window.H fltk/FL/Fl_Group.H fltk/FL/Fl_Bitmap.H fltk/FL/Fl_Double_Window.H fltk/FL/Fl_File_Chooser.H fltk/FL/Fl_Menu_Button.H fltk/FL/Fl_Preferences.H fltk/FL/Fl_Tile.H fltk/FL/Fl_File_Browser.H fltk/FL/Fl_Browser.H fltk/FL/Fl_Browser_.H fltk/FL/Fl_Scrollbar.H fltk/FL/Fl_Slider.H fltk/FL/Fl_Valuator.H fltk/FL/Fl_File_Icon.H fltk/FL/filename.H fltk/FL/Fl_File_Input.H fltk/FL/Fl_Input.H fltk/FL/Fl_Input_.H fltk/FL/Fl_Return_Button.H fltk/FL/fl_ask.H fltk/FL/Fl_Flex.H fltk/FL/Fl_Hor_Slider.H fltk/FL/Fl_Scroll.H fltk/FL/Fl_Secret_Input.H fltk/FL/Fl_Spinner.H fltk/FL/Fl_Repeat_Button.H fltk/FL/fl_callback_macros.H fltk/FL/fl_draw.H fltk/FL/Fl_Graphics_Driver.H fltk/FL/Fl_Device.H fltk/FL/Fl_Plugin.H fltk/FL/Fl_Pixmap.H fltk/FL/Fl_RGB_Image.H fltk/FL/Fl_Rect.H fltk/FL/platform.H fltk/FL/win32.H fltk/FL/wayland.H fltk/FL/x11.H fltk/FL/mac.H
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
+	@mkdir -p obj
+	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
+
+obj/theme_0$(obj_ext): ./theme.cpp .polybuild.mk ./theme.hpp fltk/FL/Fl.H fltk/FL/Fl_Export.H fltk/FL/platform_types.h fltk/FL/fl_casts.H fltk/FL/Fl_Cairo.H fltk/FL/fl_utf8.h fltk/FL/fl_types.h fltk/FL/fl_attr.h fltk/FL/Enumerations.H fltk/FL/fl_draw.H fltk/FL/Fl_Graphics_Driver.H fltk/FL/Fl_Device.H fltk/FL/Fl_Plugin.H fltk/FL/Fl_Preferences.H fltk/FL/Fl_Image.H fltk/FL/Fl_Widget.H fltk/FL/Fl_Bitmap.H fltk/FL/Fl_Pixmap.H fltk/FL/Fl_RGB_Image.H fltk/FL/Fl_Rect.H
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Compiling $@ from $<..."
 	@mkdir -p obj
 	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
@@ -135,13 +142,15 @@ obj/tls_0$(obj_ext): Polyweb/Polynet/tls.cpp .polybuild.mk Polyweb/Polynet/tls.h
 	@$(cpp_compiler) $(compile_only_flag) $< $(cpp_compilation_flags) $(obj_path_flag)$@
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished compiling $@ from $<!"
 
-objects :=  obj/main_0$(obj_ext) obj/util_0$(obj_ext) obj/client_0$(obj_ext) obj/error_0$(obj_ext) obj/polyweb_0$(obj_ext) obj/server_0$(obj_ext) obj/string_0$(obj_ext) obj/websocket_0$(obj_ext) obj/error_1$(obj_ext) obj/polynet_0$(obj_ext) obj/tls_0$(obj_ext)
+objects :=  obj/main_0$(obj_ext) obj/theme_0$(obj_ext) obj/util_0$(obj_ext) obj/client_0$(obj_ext) obj/error_0$(obj_ext) obj/polyweb_0$(obj_ext) obj/server_0$(obj_ext) obj/string_0$(obj_ext) obj/websocket_0$(obj_ext) obj/error_1$(obj_ext) obj/polynet_0$(obj_ext) obj/tls_0$(obj_ext)
 tenebra-gtk$(out_ext): .polybuild.mk $(objects) $(static_libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Building $@..."
 	@$(cpp_compiler) $(objects) $(static_libraries) $(cpp_compilation_flags) $(out_path_flag)$@ $(link_flag) $(link_time_flags) $(libraries)
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished building $@!"
 
 clean:
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Executing clean prelude: rm -rf fltk/build"
+	@rm -rf fltk/build
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Deleting tenebra-gtk$(out_ext) and obj..."
 	@rm -rf tenebra-gtk$(out_ext) obj
 	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Finished deleting tenebra-gtk$(out_ext) and obj!"

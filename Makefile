@@ -19,9 +19,14 @@ ifeq ($(OS),Windows_NT)
 	export CC CXX CL MSYS_NO_PATHCONV
 endif
 
-all:
+all: prelude0
 	@"$(MAKE)" -f .polybuild.mk --no-print-directory
 .PHONY: all
+
+prelude0:
+	@printf "\033[1m[POLYBUILD]\033[0m %s\n" "Executing prelude:  cd fltk && cmake . -B build -G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DFLTK_BACKEND_WAYLAND=OFF -DFLTK_BUILD_TEST=OFF -DFLTK_BUILD_FLUID=OFF -DFLTK_BUILD_EXAMPLES=OFF && \"$(MAKE)\" -C build "
+	@ cd fltk && cmake . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DFLTK_BACKEND_WAYLAND=OFF -DFLTK_BUILD_TEST=OFF -DFLTK_BUILD_FLUID=OFF -DFLTK_BUILD_EXAMPLES=OFF && "$(MAKE)" -C build 
+.PHONY: prelude0
 
 clean:
 	@"$(MAKE)" -f .polybuild.mk --no-print-directory $@
