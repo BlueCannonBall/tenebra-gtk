@@ -238,7 +238,12 @@ public:
         gtk_box_append(GTK_BOX(share_box), copy_link_button);
 
         share_button = gtk_menu_button_new();
-        gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(share_button), "emblem-shared-symbolic");
+        // emblem-shared-symbolic exists in Breeze but not in Adwaita, so on Windows it
+        // fell back to Adwaita's 16x16 emblem-shared.png, upscaled and blurry.
+        // send-to-symbolic is crisp in both, and renders as the same share glyph under
+        // Breeze. Don't swap it for folder-publicshare-symbolic: that one is a share
+        // glyph in Adwaita but two people in Breeze
+        gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(share_button), "send-to-symbolic");
         gtk_widget_set_tooltip_text(share_button, "Share");
         gtk_menu_button_set_popover(GTK_MENU_BUTTON(share_button), share_popover);
         adw_header_bar_pack_end(ADW_HEADER_BAR(header_bar), share_button);
