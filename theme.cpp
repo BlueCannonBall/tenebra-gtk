@@ -24,15 +24,12 @@ bool is_dark_mode() {
     }
     return false;
 #else
-    // g_settings_new() and g_settings_get_string() both abort the process rather than
-    // fail when the schema or key is missing, so neither may be called unguarded. A
-    // desktop without gsettings-desktop-schemas installed would otherwise take the
-    // whole application down before a window is ever shown.
+    // g_settings_new() and g_settings_get_string() abort the process rather than
+    // fail when the schema or key is missing, so neither may be called unguarded
     GSettingsSchemaSource* source = g_settings_schema_source_get_default();
     if (!source) {
         return false;
     }
-
     GSettingsSchema* schema = g_settings_schema_source_lookup(source, "org.gnome.desktop.interface", TRUE);
     if (!schema) {
         return false;
@@ -52,7 +49,7 @@ bool is_dark_mode() {
 #endif
 }
 
-static void draw_modern_frame(int x, int y, int w, int h) {
+static void draw_modern_frame(int x, int y, int w, int h, Fl_Color c) {
     fl_begin_loop();
     fl_vertex(x, y + 2);
     fl_vertex(x + 2, y);
@@ -79,12 +76,12 @@ static void draw_modern_box(int x, int y, int w, int h, Fl_Color bg, Fl_Color bo
     fl_end_polygon();
 
     Fl::set_box_color(border);
-    draw_modern_frame(x, y, w, h);
+    draw_modern_frame(x, y, w, h, border);
 }
 
 static void draw_dark_fltk_up_frame(int x, int y, int w, int h, Fl_Color c) {
     Fl::set_box_color(fl_color_average(FL_WHITE, c, 0.15f));
-    draw_modern_frame(x, y, w, h);
+    draw_modern_frame(x, y, w, h, c);
 }
 
 static void draw_dark_fltk_up_box(int x, int y, int w, int h, Fl_Color c) {
@@ -94,7 +91,7 @@ static void draw_dark_fltk_up_box(int x, int y, int w, int h, Fl_Color c) {
 
 static void draw_dark_fltk_down_frame(int x, int y, int w, int h, Fl_Color c) {
     Fl::set_box_color(fl_color_average(FL_BLACK, c, 0.2f));
-    draw_modern_frame(x, y, w, h);
+    draw_modern_frame(x, y, w, h, c);
 }
 
 static void draw_dark_fltk_down_box(int x, int y, int w, int h, Fl_Color c) {
@@ -103,7 +100,7 @@ static void draw_dark_fltk_down_box(int x, int y, int w, int h, Fl_Color c) {
 
 static void draw_light_fltk_up_frame(int x, int y, int w, int h, Fl_Color c) {
     Fl::set_box_color(fl_color_average(FL_BLACK, c, 0.2f));
-    draw_modern_frame(x, y, w, h);
+    draw_modern_frame(x, y, w, h, c);
 }
 
 static void draw_light_fltk_up_box(int x, int y, int w, int h, Fl_Color c) {
@@ -113,7 +110,7 @@ static void draw_light_fltk_up_box(int x, int y, int w, int h, Fl_Color c) {
 
 static void draw_light_fltk_down_frame(int x, int y, int w, int h, Fl_Color c) {
     Fl::set_box_color(fl_color_average(FL_BLACK, c, 0.3f));
-    draw_modern_frame(x, y, w, h);
+    draw_modern_frame(x, y, w, h, c);
 }
 
 static void draw_light_fltk_down_box(int x, int y, int w, int h, Fl_Color c) {
@@ -140,7 +137,7 @@ void configure_fltk_colors() {
         Fl::background2(255, 255, 255);
     }
     fl_contrast_level(50);
-    Fl::set_color(FL_SELECTION_COLOR, TENEBRA_ACCENT);
+    Fl::set_color(FL_SELECTION_COLOR, 0, 120, 215);
 }
 
 #ifdef _WIN32

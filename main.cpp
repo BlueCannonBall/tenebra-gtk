@@ -879,12 +879,17 @@ int main(int argc, char* argv[]) {
 
     (void) pn::init();
 
+    // Fl_Window::show(argc, argv) calls Fl::get_system_colors(), which re-reads the
+    // system palette and reinstalls the scheme's box types, undoing the theme. Parse
+    // the arguments separately and use the plain show() so the theme survives
+    Fl::args(argc, argv);
+
     configure_fltk_colors();
     fl_message_hotspot(0);
 
     auto window = new MainWindow(680, 700);
     window->size_range(560, 400);
-    window->show(argc, argv);
+    window->show();
 #ifdef _WIN32
     set_window_dark_mode(fl_win32_xid(window));
 #endif
